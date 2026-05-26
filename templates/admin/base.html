@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>ShiftCare Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           background: #f4f6f9; color: #1a1a2e; display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #1a1a2e; color: #fff;
+               display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; }
+    .sidebar .brand { font-size: 1.25rem; font-weight: 700;
+                      padding: 0 24px 24px; border-bottom: 1px solid #2d2d4e; }
+    .sidebar nav { flex: 1; padding-top: 16px; }
+    .sidebar nav a { display: block; padding: 12px 24px; color: #a0aec0;
+                     text-decoration: none; font-size: 0.9rem; transition: all .15s; }
+    .sidebar nav a:hover, .sidebar nav a.active { background: #2d2d4e; color: #fff; }
+    .sidebar .logout { padding: 16px 24px; border-top: 1px solid #2d2d4e; }
+    .sidebar .logout a { color: #fc8181; font-size: 0.85rem; text-decoration: none; }
+    .main { flex: 1; padding: 32px; overflow-y: auto; }
+    .page-header { display: flex; justify-content: space-between;
+                   align-items: center; margin-bottom: 24px; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; }
+    .btn { display: inline-block; padding: 8px 16px; border-radius: 6px;
+           font-size: 0.875rem; font-weight: 500; cursor: pointer;
+           text-decoration: none; border: none; transition: opacity .15s; }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: #4f46e5; color: #fff; }
+    .btn-danger  { background: #e53e3e; color: #fff; }
+    .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+    .card { background: #fff; border-radius: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { background: #f8fafc; padding: 12px 16px; text-align: left;
+         font-weight: 600; color: #4a5568; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+    .form-card { background: #fff; border-radius: 10px;
+                 box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 28px; max-width: 560px; }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600;
+            color: #4a5568; margin-bottom: 6px; }
+    input[type=text], input[type=date], input[type=time],
+    select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db;
+             border-radius: 6px; font-size: 0.9rem; }
+    input:focus, select:focus { outline: none; border-color: #4f46e5; }
+    .form-check { display: flex; align-items: center; gap: 10px; }
+    .form-check input { width: auto; }
+    .flash { padding: 12px 16px; border-radius: 6px; margin-bottom: 20px;
+             font-size: 0.875rem; font-weight: 500; }
+    .flash.success { background: #c6f6d5; color: #22543d; }
+    .flash.error   { background: #fed7d7; color: #742a2a; }
+    .date-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .date-nav a { color: #4f46e5; text-decoration: none; font-size: 0.9rem; }
+    .date-nav strong { font-size: 1rem; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px;
+             font-size: 0.75rem; font-weight: 600; }
+    .badge-green  { background: #c6f6d5; color: #22543d; }
+    .badge-red    { background: #fed7d7; color: #742a2a; }
+    .badge-yellow { background: #fefcbf; color: #744210; }
+    .badge-gray   { background: #e2e8f0; color: #4a5568; }
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="brand">🏥 ShiftCare</div>
+  <nav>
+    <a href="{{ url_for('admin_caregivers') }}"
+       class="{{ 'active' if request.endpoint and 'caregiver' in request.endpoint }}">
+      👤 Caregivers
+    </a>
+    <a href="{{ url_for('admin_clients') }}"
+       class="{{ 'active' if request.endpoint and 'client' in request.endpoint }}">
+      🧓 Clients
+    </a>
+    <a href="{{ url_for('admin_shifts') }}"
+       class="{{ 'active' if request.endpoint and 'shift' in request.endpoint }}">
+      📅 Shifts
+    </a>
+    <a href="{{ url_for('admin_coverage_log') }}"
+       class="{{ 'active' if request.endpoint == 'admin_coverage_log' }}">
+      📋 Coverage Log
+    </a>
+    <a href="{{ url_for('dashboard') }}">📊 Live Dashboard</a>
+  </nav>
+  <div class="logout"><a href="{{ url_for('admin_logout') }}">⬅ Logout</a></div>
+</aside>
+<main class="main">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash {{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

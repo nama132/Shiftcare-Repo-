@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>ShiftCare Admin Login</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           background: #f4f6f9; display: flex; align-items: center;
+           justify-content: center; min-height: 100vh; }
+    .card { background: #fff; border-radius: 12px; padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.1); width: 360px; }
+    h1 { font-size: 1.4rem; margin-bottom: 8px; }
+    p  { color: #718096; font-size: 0.875rem; margin-bottom: 24px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600;
+            color: #4a5568; margin-bottom: 6px; }
+    input[type=password] { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db;
+                           border-radius: 6px; font-size: 0.9rem; margin-bottom: 16px; }
+    input:focus { outline: none; border-color: #4f46e5; }
+    button { width: 100%; padding: 10px; background: #4f46e5; color: #fff;
+             border: none; border-radius: 6px; font-size: 0.95rem;
+             font-weight: 600; cursor: pointer; }
+    .flash { background: #fed7d7; color: #742a2a; padding: 10px 14px;
+             border-radius: 6px; font-size: 0.85rem; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🏥 ShiftCare Admin</h1>
+    <p>Enter your admin password to continue.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+    <form method="POST">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="••••••••" autofocus/>
+      <button type="submit">Sign in →</button>
+    </form>
+  </div>
+</body>
+</html>

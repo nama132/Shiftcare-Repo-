@@ -1,0 +1,49 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>📅 Shifts</h1>
+  <a href="{{ url_for('admin_shift_new') }}" class="btn btn-primary">+ Add Shift</a>
+</div>
+<div class="date-nav">
+  <a href="{{ url_for('admin_shifts', date=prev_date) }}">← Prev</a>
+  <strong>{{ selected }}</strong>
+  <a href="{{ url_for('admin_shifts', date=next_date) }}">Next →</a>
+</div>
+<div class="card">
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Time</th><th>Caregiver</th><th>Client</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for s in shifts %}
+      <tr>
+        <td>{{ s.id }}</td>
+        <td>{{ s.time }}</td>
+        <td>{{ s.caregiver_name }}</td>
+        <td>{{ s.client_name }}</td>
+        <td>
+          {% if s.status == 'scheduled' %}
+            <span class="badge badge-green">Scheduled</span>
+          {% elif s.status == 'covered' %}
+            <span class="badge badge-green">Covered</span>
+          {% elif s.status == 'uncovered' %}
+            <span class="badge badge-red">Uncovered</span>
+          {% else %}
+            <span class="badge badge-gray">{{ s.status }}</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{{ url_for('admin_shift_edit', sid=s.id) }}" class="btn btn-primary btn-sm">Edit</a>
+          <form method="POST" action="{{ url_for('admin_shift_delete', sid=s.id) }}"
+                style="display:inline" onsubmit="return confirm('Delete this shift?')">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" style="text-align:center;color:#718096">No shifts on {{ selected }}.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ '✏️ Edit Shift' if shift else '➕ New Shift' }}</h1>
+  <a href="{{ url_for('admin_shifts') }}" class="btn btn-primary">← Back</a>
+</div>
+<div class="form-card">
+  <form method="POST">
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" name="date" value="{{ shift.date if shift else '' }}" required/>
+    </div>
+    <div class="form-group">
+      <label>Time</label>
+      <input type="time" name="time" value="{{ shift.time if shift else '' }}" required/>
+    </div>
+    <div class="form-group">
+      <label>Caregiver</label>
+      <select name="caregiver_id" required>
+        <option value="">— select —</option>
+        {% for c in caregivers %}
+          <option value="{{ c.id }}" {{ 'selected' if shift and shift.caregiver_id == c.id }}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Client</label>
+      <select name="client_id" required>
+        <option value="">— select —</option>
+        {% for c in clients %}
+          <option value="{{ c.id }}" {{ 'selected' if shift and shift.client_id == c.id }}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if shift %}
+    <div class="form-group">
+      <label>Status</label>
+      <select name="status">
+        {% for st in ['scheduled','covered','uncovered','active'] %}
+          <option value="{{ st }}" {{ 'selected' if shift.status == st }}>{{ st }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% else %}
+      <input type="hidden" name="status" value="scheduled"/>
+    {% endif %}
+    <button type="submit" class="btn btn-primary">{{ 'Save Changes' if shift else 'Create Shift' }}</button>
+  </form>
+</div>
+{% endblock %}

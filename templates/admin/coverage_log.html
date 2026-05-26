@@ -1,0 +1,43 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>📋 Coverage Log</h1>
+  <form method="GET" style="display:flex;gap:8px;align-items:center">
+    <input type="date" name="date" value="{{ selected }}"
+           style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px"/>
+    <button type="submit" class="btn btn-primary">Filter</button>
+    {% if selected %}
+      <a href="{{ url_for('admin_coverage_log') }}" class="btn btn-primary">Clear</a>
+    {% endif %}
+  </form>
+</div>
+<div class="card">
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Time</th><th>Original Caregiver</th><th>Client</th><th>Candidate</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for row in log %}
+      <tr>
+        <td>{{ row.date }}</td>
+        <td>{{ row.time }}</td>
+        <td>{{ row.original_caregiver }}</td>
+        <td>{{ row.client_name }}</td>
+        <td>{{ row.candidate_name }}</td>
+        <td>
+          {% if row.status == 'claimed' %}
+            <span class="badge badge-green">Claimed</span>
+          {% elif row.status == 'declined' %}
+            <span class="badge badge-red">Declined</span>
+          {% else %}
+            <span class="badge badge-yellow">Waiting</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" style="text-align:center;color:#718096">No coverage events found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

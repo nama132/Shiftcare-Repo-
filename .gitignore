@@ -1,0 +1,32 @@
+# Secrets & environment
+.env
+.env.*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Logs & temp
+*.log
+/tmp/
+
+# OS
+.DS_Store
+.AppleDouble
+
+# Editors
+.vscode/
+.idea/
+gen_token.py
+nohup.out

@@ -308,7 +308,10 @@ def _handle_cancel(caregiver: dict, parsed: dict) -> None:
     # If multiple shifts and no time specified — ask which one.
     if len(shifts) > 1 and not shift_time:
         from coverage import _format_time
-        options = " or ".join(_format_time(s["start_time"]) for s in shifts)
+        options = " or ".join(
+            f"{_format_time(s['start_time'])} ({db.get_client_by_id(s['client_id'])['name'] if db.get_client_by_id(s['client_id']) else '?'})"
+            for s in shifts
+        )
         send_sms(
             caregiver["phone"],
             f"You have {len(shifts)} shifts on {target_date}. Which one are you cancelling? ({options})",
@@ -343,7 +346,8 @@ def _handle_shift_choice(caregiver: dict, sender: str, body: str, conv_data: dic
     # Build context string for Claude
     from coverage import _format_time
     options_str = ", ".join(
-        f"{_format_time(s['start_time'])}-{_format_time(s['end_time'])}" for s in shifts
+        f"{_format_time(s['start_time'])}-{_format_time(s['end_time'])} for {(db.get_client_by_id(s['client_id']) or {}).get('name', '?')}"
+        for s in shifts
     )
     context = f"The caregiver has shifts on {target_date}: {options_str}. They were asked which one to cancel."
 
@@ -366,7 +370,10 @@ def _handle_shift_choice(caregiver: dict, sender: str, body: str, conv_data: dic
 
     if not shift:
         # Still can't resolve — ask again
-        options = " or ".join(_format_time(s["start_time"]) for s in shifts)
+        options = " or ".join(
+            f"{_format_time(s['start_time'])} ({(db.get_client_by_id(s['client_id']) or {}).get('name', '?')})"
+            for s in shifts
+        )
         send_sms(
             caregiver["phone"],
             f"Sorry, I didn't catch that. Which shift? ({options})",

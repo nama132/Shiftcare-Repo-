@@ -31,6 +31,48 @@ db.create_tables()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-shiftcare")
 
+# ---------------------------------------------------------------------------
+# Sentry crash alerts (no-op if SENTRY_DSN not set)
+# ---------------------------------------------------------------------------
+_sentry_dsn = os.getenv("SENTRY_DSN")
+if _sentry_dsn:
+    import sentry_sdk
+    from sentry_sdk.integrations.flask import FlaskIntegration
+    sentry_sdk.init(dsn=_sentry_dsn, integrations=[FlaskIntegration()], traces_sample_rate=0.1)
+    log.info("Sentry initialized")
+
+# ---------------------------------------------------------------------------
+# Daily owner digest (APScheduler — runs at 8am server time)
+# ---------------------------------------------------------------------------
+
+def _send_daily_digest():
+    """Send the owner a morning summary of today's shifts."""
+    owner = os.getenv("OWNER_PHONE")
+    if not owner:
+        return
+    today = db.today()
+    shifts = db.get_shifts_for_date(today)
+    if not shifts:
+        return
+    total = len(shifts)
+    covered = sum(1 for s in shifts if s["status"] in ("covered", "scheduled", "active"))
+    uncovered = sum(1 for s in shifts if s["status"] == "uncovered")
+    msg = (
+        f"📋 ShiftCare daily digest for {today}: "
+        f"{total} shifts — {covered} covered, {uncovered} uncovered."
+    )
+    from sms import send_sms
+    send_sms(owner, msg)
+    log.info("Daily digest sent to owner")
+
+# Only start scheduler in production (not during tests or reloads)
+if os.getenv("ENABLE_SCHEDULER") == "1":
+    from apscheduler.schedulers.background import BackgroundScheduler
+    _scheduler = BackgroundScheduler()
+    _scheduler.add_job(_send_daily_digest, "cron", hour=8, minute=0)
+    _scheduler.start()
+    log.info("APScheduler started — daily digest at 08:00")
+
 
 # ---------------------------------------------------------------------------
 # Admin auth

@@ -161,18 +161,26 @@ def _today_iso() -> str:
 
 def wipe() -> None:
     with get_conn() as conn:
-        conn.executescript(
-            """
-            DELETE FROM family_tokens;
-            DELETE FROM conversation_state;
-            DELETE FROM pending_coverage;
-            DELETE FROM shifts;
-            DELETE FROM clients;
-            DELETE FROM caregivers;
-            DELETE FROM sqlite_sequence WHERE name IN
-                ('caregivers','clients','shifts','pending_coverage');
-            """
-        )
+        for stmt in [
+            "DELETE FROM shift_ratings",
+            "DELETE FROM scheduling_suggestions",
+            "DELETE FROM checkins",
+            "DELETE FROM family_tokens",
+            "DELETE FROM conversation_state",
+            "DELETE FROM pending_coverage",
+            "DELETE FROM shifts",
+            "DELETE FROM clients",
+            "DELETE FROM caregivers",
+        ]:
+            conn.execute(stmt)
+        # Reset SQLite autoincrement counters (no-op on PG)
+        try:
+            conn.execute(
+                "DELETE FROM sqlite_sequence WHERE name IN "
+                "('caregivers','clients','shifts','pending_coverage')"
+            )
+        except Exception:
+            pass
         conn.commit()
 
 

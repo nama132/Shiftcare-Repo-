@@ -1,0 +1,41 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>⭐ Family Ratings</h1>
+</div>
+
+<div class="card">
+  {% if ratings %}
+  <table>
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Caregiver</th>
+        <th>Client</th>
+        <th>Shift</th>
+        <th>Stars</th>
+        <th>Comment</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in ratings %}
+      <tr>
+        <td>{{ r.created_at[:16].replace('T',' ') }}</td>
+        <td>{{ r.caregiver_name or '—' }}</td>
+        <td>{{ r.client_name }}</td>
+        <td>{{ r.date }} {{ r.start_time }}-{{ r.end_time }}</td>
+        <td>
+          {% for _ in range(r.stars) %}★{% endfor %}{% for _ in range(5 - r.stars) %}☆{% endfor %}
+        </td>
+        <td style="max-width: 320px;">{{ r.comment or '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="padding: 32px; color: #718096;">
+    No family ratings yet.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

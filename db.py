@@ -1,4 +1,9 @@
-"""SQLite database setup and query helpers for ShiftCare."""
+"""SQLite (dev) + PostgreSQL (production) database helpers for ShiftCare.
+
+When DATABASE_URL is set (Railway/Render), psycopg2 is used automatically.
+All existing query helpers use ? placeholders — the PgWrapper transparently
+converts them to %s so no queries need to change.
+"""
 from __future__ import annotations
 
 import json
@@ -9,20 +14,109 @@ from typing import Any, Iterable
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "shiftcare.db")
 
+# Railway injects postgres:// — psycopg2 needs postgresql://
+_DATABASE_URL = os.getenv("DATABASE_URL", "")
+if _DATABASE_URL.startswith("postgres://"):
+    _DATABASE_URL = _DATABASE_URL.replace("postgres://", "postgresql://", 1)
+_USE_PG = bool(_DATABASE_URL)
+
+
+# ---------------------------------------------------------------------------
+# PostgreSQL thin wrapper — makes psycopg2 behave like sqlite3
+# ---------------------------------------------------------------------------
+
+class _PgCursor:
+    """Cursor wrapper: converts ? → %s and returns dicts."""
+    def __init__(self, cur):
+        self._cur = cur
+
+    def execute(self, sql: str, params=None):
+        sql = sql.replace("?", "%s")
+        if params is None:
+            self._cur.execute(sql)
+        else:
+            self._cur.execute(sql, params)
+        return self
+
+    def executemany(self, sql: str, seq):
+        sql = sql.replace("?", "%s")
+        self._cur.executemany(sql, seq)
+
+    def fetchone(self):
+        row = self._cur.fetchone()
+        if row is None:
+            return None
+        cols = [d[0] for d in self._cur.description]
+        return dict(zip(cols, row))
+
+    def fetchall(self):
+        cols = [d[0] for d in self._cur.description]
+        return [dict(zip(cols, r)) for r in self._cur.fetchall()]
+
+    @property
+    def rowcount(self):
+        return self._cur.rowcount
+
+    @property
+    def lastrowid(self):
+        # PostgreSQL doesn't have lastrowid — use RETURNING or fetchone
+        return getattr(self._cur, "lastrowid", None)
+
+
+class _PgConn:
+    """Connection wrapper that returns _PgCursor and proxies commit/close."""
+    def __init__(self, conn):
+        self._conn = conn
+
+    def cursor(self):
+        return _PgCursor(self._conn.cursor())
+
+    def execute(self, sql: str, params=None):
+        cur = _PgCursor(self._conn.cursor())
+        cur.execute(sql, params)
+        return cur
+
+    def commit(self):
+        self._conn.commit()
+
+    def rollback(self):
+        self._conn.rollback()
+
+    def close(self):
+        self._conn.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.rollback()
+        else:
+            self.commit()
+        self.close()
+
+
 # ----------------------------------------------------------------------------
 # Connection helpers
 # ----------------------------------------------------------------------------
 
-def get_conn() -> sqlite3.Connection:
-    """Return a new SQLite connection with row-dict access enabled."""
+def get_conn():
+    """Return a DB connection (SQLite locally, PostgreSQL in production)."""
+    if _USE_PG:
+        import psycopg2
+        raw = psycopg2.connect(_DATABASE_URL)
+        raw.autocommit = False
+        return _PgConn(raw)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
-def _row_to_dict(row: sqlite3.Row | None) -> dict | None:
-    return dict(row) if row is not None else None
+def _row_to_dict(row) -> dict | None:
+    if row is None:
+        return None
+    return dict(row)
 
 
 def _rows_to_dicts(rows: Iterable[sqlite3.Row]) -> list[dict]:

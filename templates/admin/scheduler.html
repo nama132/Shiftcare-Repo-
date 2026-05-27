@@ -1,0 +1,55 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>🤖 Proactive Scheduler</h1>
+  <form method="post" style="margin:0;">
+    <button type="submit" class="btn btn-primary">Run Scheduler (next 7 days)</button>
+  </form>
+</div>
+
+{% if summary %}
+<div class="card" style="padding: 18px 20px; margin-bottom: 20px;">
+  <strong>Last run:</strong>
+  scanned {{ summary.shifts_scanned }} unassigned shifts,
+  sent {{ summary.offers_sent }} offers,
+  {{ summary.no_candidates }} with no candidates.
+</div>
+{% endif %}
+
+<div class="card">
+  {% if suggestions %}
+  <table>
+    <thead>
+      <tr>
+        <th>Sent</th>
+        <th>Caregiver</th>
+        <th>Client</th>
+        <th>Shift</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in suggestions %}
+      <tr>
+        <td>{{ s.suggested_at[:16].replace('T',' ') }}</td>
+        <td>{{ s.caregiver_name }}</td>
+        <td>{{ s.client_name }}</td>
+        <td>{{ s.date }} {{ s.start_time }}-{{ s.end_time }}</td>
+        <td>
+          {% if s.status == 'accepted' %}<span class="badge badge-green">accepted</span>
+          {% elif s.status == 'declined' %}<span class="badge badge-red">declined</span>
+          {% elif s.status == 'offered' %}<span class="badge badge-yellow">offered</span>
+          {% else %}<span class="badge badge-gray">{{ s.status }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="padding: 32px; color: #718096;">
+    No scheduling offers yet. Click "Run Scheduler" to find candidates for open shifts.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

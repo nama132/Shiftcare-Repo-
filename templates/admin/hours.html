@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>⏱ Weekly Hours</h1>
+</div>
+
+<div class="date-nav">
+  <a href="{{ url_for('admin_hours', week=prev_week) }}">← Prev Week</a>
+  <strong>{{ monday }} → {{ sunday }}</strong>
+  <a href="{{ url_for('admin_hours', week=next_week) }}">Next Week →</a>
+</div>
+
+<div class="card">
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>Caregiver</th>
+        <th>Shifts Completed</th>
+        <th>Hours Worked</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.caregiver_name }}</td>
+        <td>{{ r.shifts_completed }}</td>
+        <td>{{ "%.2f"|format(r.hours or 0) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="padding: 32px; color: #718096;">
+    No check-ins recorded for this week yet.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

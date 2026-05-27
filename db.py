@@ -129,20 +129,23 @@ def _rows_to_dicts(rows: Iterable[sqlite3.Row]) -> list[dict]:
 
 def create_tables() -> None:
     """Create all tables if they don't already exist."""
+    # Use SERIAL for PostgreSQL auto-increment, INTEGER PRIMARY KEY AUTOINCREMENT for SQLite
     with get_conn() as conn:
         cur = conn.cursor()
-        cur.executescript(
+        # Execute each statement separately (works for both SQLite and PostgreSQL)
+        statements = [
             """
             CREATE TABLE IF NOT EXISTS caregivers (
                 id                 INTEGER PRIMARY KEY AUTOINCREMENT,
                 name               TEXT NOT NULL,
                 phone              TEXT NOT NULL UNIQUE,
                 zip_code           TEXT,
-                availability_json  TEXT,         -- JSON: {"mon":["8am-5pm"], ...}
-                certifications     TEXT,         -- comma-separated for v1
+                availability_json  TEXT,
+                certifications     TEXT,
                 active             INTEGER NOT NULL DEFAULT 1
-            );
-
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS clients (
                 id                      INTEGER PRIMARY KEY AUTOINCREMENT,
                 name                    TEXT NOT NULL,
@@ -151,23 +154,23 @@ def create_tables() -> None:
                 family_phone            TEXT,
                 family_email            TEXT,
                 care_notes              TEXT,
-                required_certifications TEXT  -- comma-separated, e.g. 'CNA,HHA'
-            );
-
+                required_certifications TEXT
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS shifts (
                 id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                caregiver_id  INTEGER,           -- nullable while uncovered
+                caregiver_id  INTEGER,
                 client_id     INTEGER NOT NULL,
-                date          TEXT NOT NULL,     -- 'YYYY-MM-DD'
-                start_time    TEXT NOT NULL,     -- 'HH:MM' 24h
-                end_time      TEXT NOT NULL,     -- 'HH:MM' 24h
+                date          TEXT NOT NULL,
+                start_time    TEXT NOT NULL,
+                end_time      TEXT NOT NULL,
                 status        TEXT NOT NULL DEFAULT 'scheduled',
-                                                  -- scheduled|active|covered|uncovered|cancelled
                 FOREIGN KEY (caregiver_id) REFERENCES caregivers(id),
                 FOREIGN KEY (client_id)    REFERENCES clients(id)
-            );
-
-            -- Tracks who has been asked to cover an open shift.
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS pending_coverage (
                 id            INTEGER PRIMARY KEY AUTOINCREMENT,
                 shift_id      INTEGER NOT NULL,
@@ -175,39 +178,41 @@ def create_tables() -> None:
                 phone         TEXT NOT NULL,
                 requested_at  TEXT NOT NULL,
                 status        TEXT NOT NULL DEFAULT 'pending',
-                                                  -- pending|declined|claimed|expired
                 FOREIGN KEY (shift_id)     REFERENCES shifts(id),
                 FOREIGN KEY (caregiver_id) REFERENCES caregivers(id)
-            );
-
-            -- Tracks multi-turn SMS conversation state per phone number.
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS conversation_state (
                 phone       TEXT PRIMARY KEY,
-                state       TEXT NOT NULL,   -- e.g. 'awaiting_shift_choice'
+                state       TEXT NOT NULL,
                 data_json   TEXT NOT NULL DEFAULT '{}',
-                updated_at  TEXT NOT NULL    -- ISO datetime UTC
-            );
-
-            -- Family portal access tokens (one per claimed shift).
+                updated_at  TEXT NOT NULL
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS family_tokens (
-                token       TEXT PRIMARY KEY,  -- UUID v4
+                token       TEXT PRIMARY KEY,
                 shift_id    INTEGER NOT NULL UNIQUE,
                 created_at  TEXT NOT NULL,
                 FOREIGN KEY (shift_id) REFERENCES shifts(id)
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_shifts_date    ON shifts(date);
-            CREATE INDEX IF NOT EXISTS idx_pending_phone  ON pending_coverage(phone);
-            CREATE INDEX IF NOT EXISTS idx_pending_shift  ON pending_coverage(shift_id);
-            """
-        )
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_shifts_date ON shifts(date)",
+            "CREATE INDEX IF NOT EXISTS idx_pending_phone ON pending_coverage(phone)",
+            "CREATE INDEX IF NOT EXISTS idx_pending_shift ON pending_coverage(shift_id)",
+        ]
+        for stmt in statements:
+            cur.execute(stmt)
         conn.commit()
     # Migration: add required_certifications to existing DBs that predate this column
     with get_conn() as conn:
-        cols = [r[1] for r in conn.execute("PRAGMA table_info(clients)").fetchall()]
-        if "required_certifications" not in cols:
+        try:
             conn.execute("ALTER TABLE clients ADD COLUMN required_certifications TEXT")
             conn.commit()
+        except Exception:
+            # Column already exists, skip migration
+            pass
 
 
 def get_coverage_history(caregiver_id: int, client_id: int) -> int:

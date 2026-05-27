@@ -132,76 +132,149 @@ def create_tables() -> None:
     # Use SERIAL for PostgreSQL auto-increment, INTEGER PRIMARY KEY AUTOINCREMENT for SQLite
     with get_conn() as conn:
         cur = conn.cursor()
-        # Execute each statement separately (works for both SQLite and PostgreSQL)
-        statements = [
-            """
-            CREATE TABLE IF NOT EXISTS caregivers (
-                id                 INTEGER PRIMARY KEY AUTOINCREMENT,
-                name               TEXT NOT NULL,
-                phone              TEXT NOT NULL UNIQUE,
-                zip_code           TEXT,
-                availability_json  TEXT,
-                certifications     TEXT,
-                active             INTEGER NOT NULL DEFAULT 1
-            )
-            """,
-            """
-            CREATE TABLE IF NOT EXISTS clients (
-                id                      INTEGER PRIMARY KEY AUTOINCREMENT,
-                name                    TEXT NOT NULL,
-                address                 TEXT,
-                zip_code                TEXT,
-                family_phone            TEXT,
-                family_email            TEXT,
-                care_notes              TEXT,
-                required_certifications TEXT
-            )
-            """,
-            """
-            CREATE TABLE IF NOT EXISTS shifts (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                caregiver_id  INTEGER,
-                client_id     INTEGER NOT NULL,
-                date          TEXT NOT NULL,
-                start_time    TEXT NOT NULL,
-                end_time      TEXT NOT NULL,
-                status        TEXT NOT NULL DEFAULT 'scheduled',
-                FOREIGN KEY (caregiver_id) REFERENCES caregivers(id),
-                FOREIGN KEY (client_id)    REFERENCES clients(id)
-            )
-            """,
-            """
-            CREATE TABLE IF NOT EXISTS pending_coverage (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                shift_id      INTEGER NOT NULL,
-                caregiver_id  INTEGER NOT NULL,
-                phone         TEXT NOT NULL,
-                requested_at  TEXT NOT NULL,
-                status        TEXT NOT NULL DEFAULT 'pending',
-                FOREIGN KEY (shift_id)     REFERENCES shifts(id),
-                FOREIGN KEY (caregiver_id) REFERENCES caregivers(id)
-            )
-            """,
-            """
-            CREATE TABLE IF NOT EXISTS conversation_state (
-                phone       TEXT PRIMARY KEY,
-                state       TEXT NOT NULL,
-                data_json   TEXT NOT NULL DEFAULT '{}',
-                updated_at  TEXT NOT NULL
-            )
-            """,
-            """
-            CREATE TABLE IF NOT EXISTS family_tokens (
-                token       TEXT PRIMARY KEY,
-                shift_id    INTEGER NOT NULL UNIQUE,
-                created_at  TEXT NOT NULL,
-                FOREIGN KEY (shift_id) REFERENCES shifts(id)
-            )
-            """,
-            "CREATE INDEX IF NOT EXISTS idx_shifts_date ON shifts(date)",
-            "CREATE INDEX IF NOT EXISTS idx_pending_phone ON pending_coverage(phone)",
-            "CREATE INDEX IF NOT EXISTS idx_pending_shift ON pending_coverage(shift_id)",
-        ]
+        # Choose the correct auto-increment syntax based on database type
+        if _USE_PG:
+            # PostgreSQL syntax
+            statements = [
+                """
+                CREATE TABLE IF NOT EXISTS caregivers (
+                    id                 SERIAL PRIMARY KEY,
+                    name               TEXT NOT NULL,
+                    phone              TEXT NOT NULL UNIQUE,
+                    zip_code           TEXT,
+                    availability_json  TEXT,
+                    certifications     TEXT,
+                    active             INTEGER NOT NULL DEFAULT 1
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS clients (
+                    id                      SERIAL PRIMARY KEY,
+                    name                    TEXT NOT NULL,
+                    address                 TEXT,
+                    zip_code                TEXT,
+                    family_phone            TEXT,
+                    family_email            TEXT,
+                    care_notes              TEXT,
+                    required_certifications TEXT
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS shifts (
+                    id            SERIAL PRIMARY KEY,
+                    caregiver_id  INTEGER,
+                    client_id     INTEGER NOT NULL,
+                    date          TEXT NOT NULL,
+                    start_time    TEXT NOT NULL,
+                    end_time      TEXT NOT NULL,
+                    status        TEXT NOT NULL DEFAULT 'scheduled',
+                    FOREIGN KEY (caregiver_id) REFERENCES caregivers(id),
+                    FOREIGN KEY (client_id)    REFERENCES clients(id)
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS pending_coverage (
+                    id            SERIAL PRIMARY KEY,
+                    shift_id      INTEGER NOT NULL,
+                    caregiver_id  INTEGER NOT NULL,
+                    phone         TEXT NOT NULL,
+                    requested_at  TEXT NOT NULL,
+                    status        TEXT NOT NULL DEFAULT 'pending',
+                    FOREIGN KEY (shift_id)     REFERENCES shifts(id),
+                    FOREIGN KEY (caregiver_id) REFERENCES caregivers(id)
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS conversation_state (
+                    phone       TEXT PRIMARY KEY,
+                    state       TEXT NOT NULL,
+                    data_json   TEXT NOT NULL DEFAULT '{}',
+                    updated_at  TEXT NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS family_tokens (
+                    token       TEXT PRIMARY KEY,
+                    shift_id    INTEGER NOT NULL UNIQUE,
+                    created_at  TEXT NOT NULL,
+                    FOREIGN KEY (shift_id) REFERENCES shifts(id)
+                )
+                """,
+                "CREATE INDEX IF NOT EXISTS idx_shifts_date ON shifts(date)",
+                "CREATE INDEX IF NOT EXISTS idx_pending_phone ON pending_coverage(phone)",
+                "CREATE INDEX IF NOT EXISTS idx_pending_shift ON pending_coverage(shift_id)",
+            ]
+        else:
+            # SQLite syntax
+            statements = [
+                """
+                CREATE TABLE IF NOT EXISTS caregivers (
+                    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name               TEXT NOT NULL,
+                    phone              TEXT NOT NULL UNIQUE,
+                    zip_code           TEXT,
+                    availability_json  TEXT,
+                    certifications     TEXT,
+                    active             INTEGER NOT NULL DEFAULT 1
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS clients (
+                    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name                    TEXT NOT NULL,
+                    address                 TEXT,
+                    zip_code                TEXT,
+                    family_phone            TEXT,
+                    family_email            TEXT,
+                    care_notes              TEXT,
+                    required_certifications TEXT
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS shifts (
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    caregiver_id  INTEGER,
+                    client_id     INTEGER NOT NULL,
+                    date          TEXT NOT NULL,
+                    start_time    TEXT NOT NULL,
+                    end_time      TEXT NOT NULL,
+                    status        TEXT NOT NULL DEFAULT 'scheduled',
+                    FOREIGN KEY (caregiver_id) REFERENCES caregivers(id),
+                    FOREIGN KEY (client_id)    REFERENCES clients(id)
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS pending_coverage (
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    shift_id      INTEGER NOT NULL,
+                    caregiver_id  INTEGER NOT NULL,
+                    phone         TEXT NOT NULL,
+                    requested_at  TEXT NOT NULL,
+                    status        TEXT NOT NULL DEFAULT 'pending',
+                    FOREIGN KEY (shift_id)     REFERENCES shifts(id),
+                    FOREIGN KEY (caregiver_id) REFERENCES caregivers(id)
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS conversation_state (
+                    phone       TEXT PRIMARY KEY,
+                    state       TEXT NOT NULL,
+                    data_json   TEXT NOT NULL DEFAULT '{}',
+                    updated_at  TEXT NOT NULL
+                )
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS family_tokens (
+                    token       TEXT PRIMARY KEY,
+                    shift_id    INTEGER NOT NULL UNIQUE,
+                    created_at  TEXT NOT NULL,
+                    FOREIGN KEY (shift_id) REFERENCES shifts(id)
+                )
+                """,
+                "CREATE INDEX IF NOT EXISTS idx_shifts_date ON shifts(date)",
+                "CREATE INDEX IF NOT EXISTS idx_pending_phone ON pending_coverage(phone)",
+                "CREATE INDEX IF NOT EXISTS idx_pending_shift ON pending_coverage(shift_id)",
+            ]
         for stmt in statements:
             cur.execute(stmt)
         conn.commit()

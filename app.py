@@ -527,4 +527,30 @@ def healthz():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
+
+@app.route("/admin/seed-database", methods=["POST"])
+@require_admin
+def admin_seed_database():
+    """Seed the database with test data. Protected admin endpoint."""
+    import subprocess
+    import sys
+    try:
+        # Run the seed script
+        result = subprocess.run(
+            [sys.executable, "seed.py"],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        if result.returncode == 0:
+            flash("Database seeded successfully!", "success")
+            return redirect(url_for("admin_shifts"))
+        else:
+            flash(f"Seed failed: {result.stderr}", "error")
+            return redirect(url_for("admin_shifts"))
+    except Exception as e:
+        flash(f"Seed error: {str(e)}", "error")
+        return redirect(url_for("admin_shifts"))
+
+
     app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)

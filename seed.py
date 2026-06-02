@@ -102,7 +102,7 @@ CLIENTS = [
         "name": "Mr. Robert Hayes",
         "address": "1420 H St NE, Washington, DC",
         "zip_code": "20002",
-        "family_phone": "+12025550201",
+        "family_phone": "+18173012688",  # Real phone for testing (817-301-2688)
         "family_email": "hayes.family@example.com",
         "care_notes": "Mobility assist; meds at 10am; gentle reminder for hydration.",
         "required_certifications": "CNA",

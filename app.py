@@ -115,6 +115,26 @@ def admin_caregivers():
     return render_template("admin/caregivers.html", caregivers=caregivers)
 
 
+@app.route("/admin/debug/caregivers")
+@require_admin
+def admin_debug_caregivers():
+    """Debug endpoint to show all caregiver phone numbers."""
+    caregivers = db.get_all_caregivers()
+    output = ["<h2>Caregivers in Database</h2>", "<pre>"]
+    for cg in caregivers:
+        output.append(f"ID: {cg['id']}")
+        output.append(f"Name: {cg['name']}")
+        output.append(f"Phone: {cg['phone']}")
+        output.append(f"Active: {cg['active']}")
+        output.append("-" * 50)
+    output.append("</pre>")
+    output.append(f"<p><strong>Total caregivers: {len(caregivers)}</strong></p>")
+    output.append(f"<p>ENV TELNYX_NUMBER_1: {os.getenv('TELNYX_NUMBER_1', 'NOT SET')}</p>")
+    output.append(f"<p>ENV TELNYX_NUMBER_2: {os.getenv('TELNYX_NUMBER_2', 'NOT SET')}</p>")
+    output.append(f"<p>ENV TELNYX_NUMBER_3: {os.getenv('TELNYX_NUMBER_3', 'NOT SET')}</p>")
+    return "\n".join(output)
+
+
 @app.route("/admin/caregivers/new", methods=["GET", "POST"])
 @require_admin
 def admin_caregiver_new():
@@ -525,9 +545,6 @@ def healthz():
     return {"ok": True}
 
 
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", "5000"))
-
 @app.route("/admin/seed-database", methods=["POST"])
 @require_admin
 def admin_seed_database():
@@ -553,4 +570,6 @@ def admin_seed_database():
         return redirect(url_for("admin_shifts"))
 
 
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)

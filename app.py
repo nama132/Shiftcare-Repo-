@@ -129,9 +129,15 @@ def admin_debug_caregivers():
         output.append("-" * 50)
     output.append("</pre>")
     output.append(f"<p><strong>Total caregivers: {len(caregivers)}</strong></p>")
-    output.append(f"<p>ENV TELNYX_NUMBER_1: {os.getenv('TELNYX_NUMBER_1', 'NOT SET')}</p>")
-    output.append(f"<p>ENV TELNYX_NUMBER_2: {os.getenv('TELNYX_NUMBER_2', 'NOT SET')}</p>")
-    output.append(f"<p>ENV TELNYX_NUMBER_3: {os.getenv('TELNYX_NUMBER_3', 'NOT SET')}</p>")
+    output.append("<h2>Environment Variables</h2>")
+    output.append(f"<p><strong>SMS_PROVIDER:</strong> {os.getenv('SMS_PROVIDER', 'NOT SET')}</p>")
+    output.append(f"<p><strong>DRY_RUN_SMS:</strong> {os.getenv('DRY_RUN_SMS', 'NOT SET')}</p>")
+    output.append(f"<p><strong>TELNYX_FROM (Agency Sender):</strong> {os.getenv('TELNYX_FROM', 'NOT SET')}</p>")
+    output.append(f"<p><strong>TELNYX_API_KEY:</strong> {'SET ('+os.getenv('TELNYX_API_KEY', '')[:20]+'...)' if os.getenv('TELNYX_API_KEY') else 'NOT SET'}</p>")
+    output.append(f"<p><strong>TELNYX_NUMBER_1 (Maria):</strong> {os.getenv('TELNYX_NUMBER_1', 'NOT SET')}</p>")
+    output.append(f"<p><strong>TELNYX_NUMBER_2 (Priya):</strong> {os.getenv('TELNYX_NUMBER_2', 'NOT SET')}</p>")
+    output.append(f"<p><strong>TELNYX_NUMBER_3 (Family):</strong> {os.getenv('TELNYX_NUMBER_3', 'NOT SET')}</p>")
+    output.append(f"<p><strong>OWNER_PHONE:</strong> {os.getenv('OWNER_PHONE', 'NOT SET')}</p>")
     return "\n".join(output)
 
 

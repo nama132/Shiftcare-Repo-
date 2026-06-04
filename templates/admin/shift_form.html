@@ -11,8 +11,12 @@
       <input type="date" name="date" value="{{ shift.date if shift else '' }}" required/>
     </div>
     <div class="form-group">
-      <label>Time</label>
+      <label>Start Time</label>
       <input type="time" name="time" value="{{ shift.time if shift else '' }}" required/>
+    </div>
+    <div class="form-group">
+      <label>End Time</label>
+      <input type="time" name="end_time" value="{{ shift.end_time if shift else '' }}" required/>
     </div>
     <div class="form-group">
       <label>Caregiver</label>

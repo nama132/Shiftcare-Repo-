@@ -1023,6 +1023,11 @@ def terms_of_service():
     return render_template("terms.html")
 
 
+@app.route("/intake-form")
+def intake_form():
+    return render_template("intake_form.html")
+
+
 # ---------------------------------------------------------------------------
 
 @app.route("/healthz")

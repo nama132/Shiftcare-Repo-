@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShiftCare — Sign In</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           background: #f4f6f9; display: flex; align-items: center;
+           justify-content: center; min-height: 100vh; }
+    .card { background: #fff; border-radius: 12px; padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.1); width: 380px; }
+    .logo { font-size: 1.5rem; font-weight: 700; color: #4f46e5; margin-bottom: 6px; }
+    .subtitle { color: #718096; font-size: 0.875rem; margin-bottom: 28px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600;
+            color: #4a5568; margin-bottom: 6px; }
+    input[type=text], input[type=password] {
+      width: 100%; padding: 10px 12px; border: 1px solid #d1d5db;
+      border-radius: 6px; font-size: 0.9rem; margin-bottom: 18px; }
+    input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.15); }
+    button { width: 100%; padding: 11px; background: #4f46e5; color: #fff;
+             border: none; border-radius: 6px; font-size: 0.95rem;
+             font-weight: 600; cursor: pointer; transition: background .15s; }
+    button:hover { background: #4338ca; }
+    .error { background: #fed7d7; color: #742a2a; padding: 10px 14px;
+             border-radius: 6px; font-size: 0.85rem; margin-bottom: 18px; }
+    .flash-success { background: #c6f6d5; color: #276749; padding: 10px 14px;
+                     border-radius: 6px; font-size: 0.85rem; margin-bottom: 18px; }
+    .footer { text-align: center; margin-top: 20px; font-size: 0.82rem; color: #718096; }
+    .footer a { color: #4f46e5; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🏥 ShiftCare</div>
+    <p class="subtitle">Agency admin portal — sign in to continue.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="{% if cat == 'success' %}flash-success{% else %}error{% endif %}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" placeholder="your-username" autofocus autocomplete="username"/>
+
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password"/>
+
+      <button type="submit">Sign in →</button>
+    </form>
+
+    <p class="footer">
+      New agency? <a href="/signup">Create an account</a>
+    </p>
+  </div>
+</body>
+</html>

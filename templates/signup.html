@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShiftCare — Create Account</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           background: #f4f6f9; display: flex; align-items: center;
+           justify-content: center; min-height: 100vh; padding: 24px 0; }
+    .card { background: #fff; border-radius: 12px; padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.1); width: 420px; }
+    .logo { font-size: 1.5rem; font-weight: 700; color: #4f46e5; margin-bottom: 6px; }
+    .subtitle { color: #718096; font-size: 0.875rem; margin-bottom: 28px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600;
+            color: #4a5568; margin-bottom: 6px; }
+    input[type=text], input[type=email], input[type=tel], input[type=password] {
+      width: 100%; padding: 10px 12px; border: 1px solid #d1d5db;
+      border-radius: 6px; font-size: 0.9rem; margin-bottom: 4px; }
+    input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.15); }
+    .field { margin-bottom: 16px; }
+    .field-error { color: #e53e3e; font-size: 0.8rem; margin-top: 4px; }
+    button { width: 100%; padding: 11px; background: #4f46e5; color: #fff;
+             border: none; border-radius: 6px; font-size: 0.95rem;
+             font-weight: 600; cursor: pointer; transition: background .15s; margin-top: 8px; }
+    button:hover { background: #4338ca; }
+    .flash-error { background: #fed7d7; color: #742a2a; padding: 10px 14px;
+                   border-radius: 6px; font-size: 0.85rem; margin-bottom: 18px; }
+    .footer { text-align: center; margin-top: 20px; font-size: 0.82rem; color: #718096; }
+    .footer a { color: #4f46e5; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+    .hint { color: #a0aec0; font-size: 0.78rem; margin-top: 3px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🏥 ShiftCare</div>
+    <p class="subtitle">Create your agency account to get started.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash-error">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" novalidate>
+      <div class="field">
+        <label for="agency_name">Agency Name</label>
+        <input type="text" id="agency_name" name="agency_name"
+               value="{{ form.get('agency_name', '') }}" placeholder="Sunrise Home Care" autofocus/>
+        {% if errors.get('agency_name') %}
+          <p class="field-error">{{ errors.agency_name }}</p>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username"
+               value="{{ form.get('username', '') }}" placeholder="myagency" autocomplete="username"/>
+        <p class="hint">3–30 characters: lowercase letters, numbers, underscores only.</p>
+        {% if errors.get('username') %}
+          <p class="field-error">{{ errors.username }}</p>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email"
+               value="{{ form.get('email', '') }}" placeholder="admin@myagency.com"/>
+        {% if errors.get('email') %}
+          <p class="field-error">{{ errors.email }}</p>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <label for="phone">Mobile Phone (for SMS alerts)</label>
+        <input type="tel" id="phone" name="phone"
+               value="{{ form.get('phone', '') }}" placeholder="(555) 555-5555"/>
+        {% if errors.get('phone') %}
+          <p class="field-error">{{ errors.phone }}</p>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password"
+               placeholder="••••••••" autocomplete="new-password"/>
+        <p class="hint">Minimum 8 characters.</p>
+        {% if errors.get('password') %}
+          <p class="field-error">{{ errors.password }}</p>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <label for="confirm_password">Confirm Password</label>
+        <input type="password" id="confirm_password" name="confirm_password"
+               placeholder="••••••••" autocomplete="new-password"/>
+        {% if errors.get('confirm_password') %}
+          <p class="field-error">{{ errors.confirm_password }}</p>
+        {% endif %}
+      </div>
+
+      <button type="submit">Create Account →</button>
+    </form>
+
+    <p class="footer">
+      Already have an account? <a href="/login">Sign in</a>
+    </p>
+  </div>
+</body>
+</html>

@@ -1013,6 +1013,11 @@ def family_portal(token: str):
 # Public legal pages (required for 10DLC compliance)
 # ---------------------------------------------------------------------------
 
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+
 @app.route("/privacy")
 def privacy_policy():
     return render_template("privacy.html")

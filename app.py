@@ -638,8 +638,15 @@ def _handle_decline(caregiver: dict, sender: str) -> None:
 # Dashboard
 # ---------------------------------------------------------------------------
 
-@app.route("/dashboard")
 @app.route("/")
+def landing():
+    # Logged-in staff go straight to their dashboard; visitors see the landing page.
+    if session.get("user_id"):
+        return redirect(url_for("dashboard"))
+    return render_template("landing.html")
+
+
+@app.route("/dashboard")
 @require_login
 def dashboard():
     today = db.today()
@@ -1016,6 +1023,61 @@ def family_portal(token: str):
 @app.route("/about")
 def about():
     return render_template("about.html")
+
+
+def _send_contact_email(name: str, email: str, agency: str, message: str) -> None:
+    """Email a contact form submission to the owner via SMTP (no-op if unconfigured)."""
+    host = os.getenv("SMTP_HOST")
+    if not host:
+        log.info("SMTP not configured — contact email skipped (submission still saved to DB)")
+        return
+    import smtplib
+    from email.message import EmailMessage
+
+    port = int(os.getenv("SMTP_PORT", "587"))
+    user = os.getenv("SMTP_USER", "")
+    password = os.getenv("SMTP_PASSWORD", "")
+    to_addr = os.getenv("CONTACT_TO_EMAIL", "amanabbas@shiftcare.com")
+    from_addr = os.getenv("SMTP_FROM", user or to_addr)
+
+    msg = EmailMessage()
+    msg["Subject"] = f"New ShiftCare inquiry from {name}"
+    msg["From"] = from_addr
+    msg["To"] = to_addr
+    msg["Reply-To"] = email
+    msg.set_content(
+        f"New contact form submission:\n\n"
+        f"Name: {name}\n"
+        f"Email: {email}\n"
+        f"Agency: {agency or '(not provided)'}\n\n"
+        f"Message:\n{message}\n"
+    )
+    try:
+        with smtplib.SMTP(host, port, timeout=10) as server:
+            server.starttls()
+            if user:
+                server.login(user, password)
+            server.send_message(msg)
+        log.info("Contact email sent to %s", to_addr)
+    except Exception:
+        log.exception("Failed to send contact email")
+
+
+@app.route("/contact", methods=["POST"])
+def contact():
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip()
+    agency = request.form.get("agency", "").strip()
+    message = request.form.get("message", "").strip()
+
+    if not name or not email or not message:
+        flash("Please fill in your name, email, and message.", "error")
+        return redirect(url_for("landing") + "#contact")
+
+    db.save_contact_submission(name, email, agency, message)
+    _send_contact_email(name, email, agency, message)
+    flash("Thanks! We received your message and will be in touch shortly.", "success")
+    return redirect(url_for("landing") + "#contact")
 
 
 @app.route("/privacy")

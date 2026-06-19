@@ -200,6 +200,16 @@ def create_tables() -> None:
                     FOREIGN KEY (shift_id) REFERENCES shifts(id)
                 )
                 """,
+                """
+                CREATE TABLE IF NOT EXISTS contact_submissions (
+                    id           SERIAL PRIMARY KEY,
+                    name         TEXT NOT NULL,
+                    email        TEXT NOT NULL,
+                    agency       TEXT,
+                    message      TEXT NOT NULL,
+                    created_at   TEXT NOT NULL
+                )
+                """,
                 "CREATE INDEX IF NOT EXISTS idx_shifts_date ON shifts(date)",
                 "CREATE INDEX IF NOT EXISTS idx_pending_phone ON pending_coverage(phone)",
                 "CREATE INDEX IF NOT EXISTS idx_pending_shift ON pending_coverage(shift_id)",
@@ -271,6 +281,16 @@ def create_tables() -> None:
                     FOREIGN KEY (shift_id) REFERENCES shifts(id)
                 )
                 """,
+                """
+                CREATE TABLE IF NOT EXISTS contact_submissions (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name         TEXT NOT NULL,
+                    email        TEXT NOT NULL,
+                    agency       TEXT,
+                    message      TEXT NOT NULL,
+                    created_at   TEXT NOT NULL
+                )
+                """,
                 "CREATE INDEX IF NOT EXISTS idx_shifts_date ON shifts(date)",
                 "CREATE INDEX IF NOT EXISTS idx_pending_phone ON pending_coverage(phone)",
                 "CREATE INDEX IF NOT EXISTS idx_pending_shift ON pending_coverage(shift_id)",
@@ -286,6 +306,27 @@ def create_tables() -> None:
         except Exception:
             # Column already exists, skip migration
             pass
+
+
+def save_contact_submission(name: str, email: str, agency: str, message: str) -> None:
+    """Persist a landing-page contact form submission."""
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO contact_submissions (name, email, agency, message, created_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (name, email, agency, message, datetime.utcnow().isoformat()),
+        )
+        conn.commit()
+
+
+def get_contact_submissions(limit: int = 100) -> list[dict]:
+    """Return recent contact form submissions, newest first."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM contact_submissions ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return _rows_to_dicts(rows)
 
 
 def get_coverage_history(caregiver_id: int, client_id: int) -> int:

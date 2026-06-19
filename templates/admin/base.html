@@ -83,6 +83,10 @@
        class="{{ 'active' if request.endpoint == 'admin_coverage_log' }}">
       📋 Coverage Log
     </a>
+    <a href="{{ url_for('admin_contacts') }}"
+       class="{{ 'active' if request.endpoint == 'admin_contacts' }}">
+      ✉️ Inquiries
+    </a>
     <a href="{{ url_for('dashboard') }}">📊 Live Dashboard</a>
   </nav>
   <div class="logout"><a href="{{ url_for('admin_logout') }}">⬅ Logout</a></div>

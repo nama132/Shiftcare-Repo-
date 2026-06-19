@@ -419,6 +419,13 @@ def admin_coverage_log():
                            log=log_entries, selected=selected)
 
 
+@app.route("/admin/inquiries")
+@require_admin
+def admin_contacts():
+    submissions = db.get_contact_submissions()
+    return render_template("admin/contacts.html", submissions=submissions)
+
+
 # ---------------------------------------------------------------------------
 # Incoming SMS webhook
 # ---------------------------------------------------------------------------

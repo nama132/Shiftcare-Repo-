@@ -290,6 +290,15 @@ def admin_fix_coverage_data():
             log_lines.append(f"Deleted duplicate caregiver ID {cg_id} (and its shifts/pending rows)")
         _conn.commit()
 
+    # Ensure shift #4 has a valid start time (column is start_time).
+    with db.get_conn() as _conn:
+        _conn.execute(
+            "UPDATE shifts SET start_time = ?, status = ? WHERE id = ?",
+            ("09:00", "scheduled", 4),
+        )
+        _conn.commit()
+    log_lines.append("Set shift #4 start_time=09:00, status=scheduled")
+
     # Report final state
     remaining = db.get_all_caregivers()
     log_lines.append("")

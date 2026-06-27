@@ -263,52 +263,6 @@ def admin_debug_caregivers():
     return "\n".join(output)
 
 
-@app.route("/admin/debug/fix-coverage-data-xk9m2")
-@require_admin
-def admin_fix_coverage_data():
-    """One-off maintenance: set backup availability + remove duplicate caregivers."""
-    import json as _json
-    log_lines = []
-
-    full_week = _json.dumps({
-        "mon": ["8am-8pm"], "tue": ["8am-8pm"], "wed": ["8am-8pm"],
-        "thu": ["8am-8pm"], "fri": ["8am-8pm"], "sat": ["8am-8pm"], "sun": ["8am-8pm"],
-    })
-
-    # Give the CORRECT records availability so the coverage hunt can find them.
-    for cg_id in (3, 4):  # Maria (703-479-8814), Priya (703-577-4626)
-        db.update_caregiver_availability(cg_id, full_week)
-        log_lines.append(f"Set availability for caregiver ID {cg_id}")
-
-    # Delete the duplicate OLD records (must clear dependent rows first to
-    # satisfy foreign-key constraints in Postgres).
-    with db.get_conn() as _conn:
-        for cg_id in (1, 2):  # Maria old (+15714662908), Priya old (+14436360988)
-            _conn.execute("DELETE FROM pending_coverage WHERE caregiver_id = ?", (cg_id,))
-            _conn.execute("DELETE FROM shifts WHERE caregiver_id = ?", (cg_id,))
-            _conn.execute("DELETE FROM caregivers WHERE id = ?", (cg_id,))
-            log_lines.append(f"Deleted duplicate caregiver ID {cg_id} (and its shifts/pending rows)")
-        _conn.commit()
-
-    # Ensure shift #4 has a valid start time (column is start_time).
-    with db.get_conn() as _conn:
-        _conn.execute(
-            "UPDATE shifts SET start_time = ?, status = ? WHERE id = ?",
-            ("09:00", "scheduled", 4),
-        )
-        _conn.commit()
-    log_lines.append("Set shift #4 start_time=09:00, status=scheduled")
-
-    # Report final state
-    remaining = db.get_all_caregivers()
-    log_lines.append("")
-    log_lines.append("Remaining caregivers:")
-    for cg in remaining:
-        log_lines.append(f"  ID {cg['id']} | {cg['name']} | {cg['phone']} | active={cg['active']}")
-
-    return "<pre>" + "\n".join(log_lines) + "</pre>"
-
-
 @app.route("/admin/caregivers/new", methods=["GET", "POST"])
 @require_admin
 def admin_caregiver_new():

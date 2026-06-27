@@ -647,9 +647,7 @@ def _handle_decline(caregiver: dict, sender: str) -> None:
 
 @app.route("/")
 def landing():
-    # Logged-in staff go straight to their dashboard; visitors see the landing page.
-    if session.get("user_id"):
-        return redirect(url_for("dashboard"))
+    # Always show the public landing page. Staff reach the dashboard via Sign In.
     return render_template("landing.html")
 
 
@@ -1045,7 +1043,7 @@ def _send_contact_email(name: str, email: str, agency: str, message: str) -> Non
     port = int(os.getenv("SMTP_PORT", "587"))
     user = os.getenv("SMTP_USER", "")
     password = os.getenv("SMTP_PASSWORD", "")
-    to_addr = os.getenv("CONTACT_TO_EMAIL", "amanabbas@shiftcare.com")
+    to_addr = os.getenv("CONTACT_TO_EMAIL", "aman@shiftcarehq.com")
     from_addr = os.getenv("SMTP_FROM", user or to_addr)
 
     msg = EmailMessage()

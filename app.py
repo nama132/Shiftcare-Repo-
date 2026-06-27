@@ -263,6 +263,38 @@ def admin_debug_caregivers():
     return "\n".join(output)
 
 
+@app.route("/admin/debug/fix-coverage-data-xk9m2")
+@require_admin
+def admin_fix_coverage_data():
+    """One-off maintenance: set backup availability + remove duplicate caregivers."""
+    import json as _json
+    log_lines = []
+
+    full_week = _json.dumps({
+        "mon": ["8am-8pm"], "tue": ["8am-8pm"], "wed": ["8am-8pm"],
+        "thu": ["8am-8pm"], "fri": ["8am-8pm"], "sat": ["8am-8pm"], "sun": ["8am-8pm"],
+    })
+
+    # Give the CORRECT records availability so the coverage hunt can find them.
+    for cg_id in (3, 4):  # Maria (703-479-8814), Priya (703-577-4626)
+        db.update_caregiver_availability(cg_id, full_week)
+        log_lines.append(f"Set availability for caregiver ID {cg_id}")
+
+    # Delete the duplicate OLD records.
+    for cg_id in (1, 2):  # Maria old (+15714662908), Priya old (+14436360988)
+        db.delete_caregiver(cg_id)
+        log_lines.append(f"Deleted duplicate caregiver ID {cg_id}")
+
+    # Report final state
+    remaining = db.get_all_caregivers()
+    log_lines.append("")
+    log_lines.append("Remaining caregivers:")
+    for cg in remaining:
+        log_lines.append(f"  ID {cg['id']} | {cg['name']} | {cg['phone']} | active={cg['active']}")
+
+    return "<pre>" + "\n".join(log_lines) + "</pre>"
+
+
 @app.route("/admin/caregivers/new", methods=["GET", "POST"])
 @require_admin
 def admin_caregiver_new():

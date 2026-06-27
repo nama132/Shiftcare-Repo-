@@ -1032,32 +1032,6 @@ def about():
     return render_template("about.html")
 
 
-@app.route("/admin/reset-admin-user-xk9m2")
-def reset_admin_user():
-    """One-time credential reset — remove after use."""
-    new_username = "amanabbas"
-    from werkzeug.security import generate_password_hash
-    new_hash = generate_password_hash("10001377a", method="pbkdf2:sha256")
-    try:
-        with db.get_conn() as conn:
-            rows = conn.execute("SELECT id, username FROM users ORDER BY id LIMIT 1").fetchall()
-            if rows:
-                uid = rows[0]["id"]
-                conn.execute("UPDATE users SET username=?, password_hash=? WHERE id=?",
-                             (new_username, new_hash, uid))
-                conn.commit()
-                return f"Updated user id={uid} → username=amanabbas. Login now works."
-            else:
-                conn.execute(
-                    "INSERT INTO users (agency_name, username, email, phone, password_hash, role) "
-                    "VALUES (?,?,?,?,?,?)",
-                    ("ShiftCare", new_username, "amanabbas267@gmail.com", "+17035774626", new_hash, "admin")
-                )
-                conn.commit()
-                return "Created new admin user amanabbas. Login now works."
-    except Exception as e:
-        return f"Error: {e}", 500
-
 
 def _send_contact_email(name: str, email: str, agency: str, message: str) -> None:
     """Email a contact form submission to the owner via SMTP (no-op if unconfigured)."""

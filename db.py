@@ -295,6 +295,34 @@ def create_tables() -> None:
                 "CREATE INDEX IF NOT EXISTS idx_pending_phone ON pending_coverage(phone)",
                 "CREATE INDEX IF NOT EXISTS idx_pending_shift ON pending_coverage(shift_id)",
             ]
+        if _USE_PG:
+            statements.append("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id             SERIAL PRIMARY KEY,
+                    agency_name    TEXT NOT NULL,
+                    username       TEXT NOT NULL UNIQUE,
+                    email          TEXT NOT NULL UNIQUE,
+                    phone          TEXT,
+                    password_hash  TEXT NOT NULL,
+                    role           TEXT NOT NULL DEFAULT 'admin',
+                    created_at     TEXT,
+                    last_login     TEXT
+                )
+            """)
+        else:
+            statements.append("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                    agency_name    TEXT NOT NULL,
+                    username       TEXT NOT NULL UNIQUE,
+                    email          TEXT NOT NULL UNIQUE,
+                    phone          TEXT,
+                    password_hash  TEXT NOT NULL,
+                    role           TEXT NOT NULL DEFAULT 'admin',
+                    created_at     TEXT,
+                    last_login     TEXT
+                )
+            """)
         for stmt in statements:
             cur.execute(stmt)
         conn.commit()
@@ -327,6 +355,41 @@ def get_contact_submissions(limit: int = 100) -> list[dict]:
             (limit,),
         ).fetchall()
     return _rows_to_dicts(rows)
+
+
+def get_user_by_username(username: str) -> dict | None:
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM users WHERE username=? LIMIT 1", (username,)).fetchone()
+    return _row_to_dict(row)
+
+
+def username_exists(username: str) -> bool:
+    with get_conn() as conn:
+        row = conn.execute("SELECT id FROM users WHERE username=? LIMIT 1", (username,)).fetchone()
+    return row is not None
+
+
+def email_exists(email: str) -> bool:
+    with get_conn() as conn:
+        row = conn.execute("SELECT id FROM users WHERE email=? LIMIT 1", (email,)).fetchone()
+    return row is not None
+
+
+def create_user(agency_name: str, username: str, email: str, phone: str, password_hash: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO users (agency_name, username, email, phone, password_hash, role, created_at) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (agency_name, username, email, phone, password_hash, "admin", datetime.utcnow().isoformat()),
+        )
+        conn.commit()
+
+
+def update_last_login(user_id: int) -> None:
+    with get_conn() as conn:
+        conn.execute("UPDATE users SET last_login=? WHERE id=?",
+                     (datetime.utcnow().isoformat(), user_id))
+        conn.commit()
 
 
 def get_coverage_history(caregiver_id: int, client_id: int) -> int:

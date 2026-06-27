@@ -1118,3 +1118,238 @@ def get_coverage_log(date: str | None = None) -> list[dict]:
                 query + " ORDER BY s.date DESC, s.start_time"
             ).fetchall()
     return _rows_to_dicts(rows)
+
+# ----------------------------------------------------------------------------
+# Employee portal — accounts, OTP, clock-in/out, pay, availability
+# ----------------------------------------------------------------------------
+
+def _ensure_employee_tables() -> None:
+    pg = _USE_PG
+    id_col = "SERIAL PRIMARY KEY" if pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    stmts = [
+        f"""CREATE TABLE IF NOT EXISTS employee_accounts (
+            id              {id_col},
+            caregiver_id    INTEGER NOT NULL UNIQUE,
+            password_hash   TEXT NOT NULL,
+            portal_enabled  INTEGER NOT NULL DEFAULT 1,
+            last_login      TEXT,
+            FOREIGN KEY (caregiver_id) REFERENCES caregivers(id)
+        )""",
+        f"""CREATE TABLE IF NOT EXISTS otp_codes (
+            id          {id_col},
+            phone       TEXT NOT NULL,
+            otp_code    TEXT NOT NULL,
+            expires_at  TEXT NOT NULL,
+            attempts    INTEGER NOT NULL DEFAULT 0,
+            created_at  TEXT NOT NULL
+        )""",
+        f"""CREATE TABLE IF NOT EXISTS clock_events (
+            id          {id_col},
+            shift_id    INTEGER NOT NULL,
+            caregiver_id INTEGER NOT NULL,
+            event_type  TEXT NOT NULL,
+            recorded_at TEXT NOT NULL
+        )""",
+        f"""CREATE TABLE IF NOT EXISTS pay_periods (
+            id           {id_col},
+            period_start TEXT NOT NULL,
+            period_end   TEXT NOT NULL,
+            status       TEXT NOT NULL DEFAULT 'open'
+        )""",
+    ]
+    with get_conn() as conn:
+        cur = conn.cursor()
+        for s in stmts:
+            cur.execute(s)
+        conn.commit()
+
+_ensure_employee_tables()
+
+
+def employee_account_exists(caregiver_id: int) -> bool:
+    with get_conn() as conn:
+        row = conn.execute("SELECT id FROM employee_accounts WHERE caregiver_id=? LIMIT 1", (caregiver_id,)).fetchone()
+    return row is not None
+
+
+def get_employee_account(caregiver_id: int) -> dict | None:
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM employee_accounts WHERE caregiver_id=? LIMIT 1", (caregiver_id,)).fetchone()
+    return _row_to_dict(row)
+
+
+def create_employee_account(caregiver_id: int, password_hash: str) -> None:
+    with get_conn() as conn:
+        conn.execute("INSERT INTO employee_accounts (caregiver_id, password_hash, portal_enabled) VALUES (?,?,1)", (caregiver_id, password_hash))
+        conn.commit()
+
+
+def update_employee_password(caregiver_id: int, password_hash: str) -> None:
+    with get_conn() as conn:
+        conn.execute("UPDATE employee_accounts SET password_hash=? WHERE caregiver_id=?", (password_hash, caregiver_id))
+        conn.commit()
+
+
+def set_employee_portal_enabled(caregiver_id: int, enabled: bool) -> None:
+    with get_conn() as conn:
+        conn.execute("UPDATE employee_accounts SET portal_enabled=? WHERE caregiver_id=?", (1 if enabled else 0, caregiver_id))
+        conn.commit()
+
+
+def update_employee_last_login(caregiver_id: int) -> None:
+    with get_conn() as conn:
+        conn.execute("UPDATE employee_accounts SET last_login=? WHERE caregiver_id=?", (datetime.utcnow().isoformat(), caregiver_id))
+        conn.commit()
+
+
+def get_employee_by_phone(phone: str) -> dict | None:
+    cg = get_caregiver_by_phone(phone)
+    if not cg:
+        return None
+    acct = get_employee_account(cg["id"])
+    if not acct:
+        return None
+    return {**cg, **acct}
+
+
+def save_otp(phone: str, otp_code: str, expires_at: str) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM otp_codes WHERE phone=?", (phone,))
+        conn.execute("INSERT INTO otp_codes (phone, otp_code, expires_at, attempts, created_at) VALUES (?,?,?,0,?)", (phone, otp_code, expires_at, datetime.utcnow().isoformat()))
+        conn.commit()
+
+
+def get_otp(phone: str) -> dict | None:
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM otp_codes WHERE phone=? ORDER BY created_at DESC LIMIT 1", (phone,)).fetchone()
+    return _row_to_dict(row)
+
+
+def delete_otp(phone: str) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM otp_codes WHERE phone=?", (phone,))
+        conn.commit()
+
+
+def increment_otp_attempts(phone: str) -> None:
+    with get_conn() as conn:
+        conn.execute("UPDATE otp_codes SET attempts=attempts+1 WHERE phone=?", (phone,))
+        conn.commit()
+
+
+def clock_in(shift_id: int, caregiver_id: int) -> None:
+    with get_conn() as conn:
+        conn.execute("INSERT INTO clock_events (shift_id, caregiver_id, event_type, recorded_at) VALUES (?,?,?,?)", (shift_id, caregiver_id, "clock_in", datetime.utcnow().isoformat()))
+        conn.commit()
+
+
+def clock_out(shift_id: int, caregiver_id: int) -> None:
+    with get_conn() as conn:
+        conn.execute("INSERT INTO clock_events (shift_id, caregiver_id, event_type, recorded_at) VALUES (?,?,?,?)", (shift_id, caregiver_id, "clock_out", datetime.utcnow().isoformat()))
+        conn.commit()
+
+
+def is_clocked_in(shift_id: int, caregiver_id: int) -> bool:
+    with get_conn() as conn:
+        row = conn.execute("SELECT event_type FROM clock_events WHERE shift_id=? AND caregiver_id=? ORDER BY recorded_at DESC LIMIT 1", (shift_id, caregiver_id)).fetchone()
+    return row is not None and row["event_type"] == "clock_in"
+
+
+def get_clock_events_for_shift(shift_id: int) -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM clock_events WHERE shift_id=? ORDER BY recorded_at", (shift_id,)).fetchall()
+    return _rows_to_dicts(rows)
+
+
+def _calc_shift_hours(shift: dict) -> float:
+    try:
+        from datetime import datetime as _dt
+        start = _dt.strptime(shift["start_time"], "%H:%M")
+        end = _dt.strptime(shift["end_time"], "%H:%M")
+        return round(max(0, (end - start).total_seconds() / 3600), 2)
+    except Exception:
+        return 0.0
+
+
+def get_caregiver_pay_rate(caregiver_id: int) -> float:
+    return 20.0
+
+
+def get_today_shift_for_employee(caregiver_id: int) -> dict | None:
+    td = today()
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM shifts WHERE caregiver_id=? AND date=? AND status NOT IN ('cancelled') LIMIT 1", (caregiver_id, td)).fetchone()
+    return _row_to_dict(row)
+
+
+def get_upcoming_shifts_for_employee(caregiver_id: int, limit: int = 10) -> list[dict]:
+    td = today()
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM shifts WHERE caregiver_id=? AND date>=? ORDER BY date, start_time LIMIT ?", (caregiver_id, td, limit)).fetchall()
+    return _rows_to_dicts(rows)
+
+
+def get_shifts_for_caregiver_range(caregiver_id: int, start: str, end: str) -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM shifts WHERE caregiver_id=? AND date>=? AND date<=? ORDER BY date, start_time", (caregiver_id, start, end)).fetchall()
+    return _rows_to_dicts(rows)
+
+
+def get_week_stats(caregiver_id: int) -> dict:
+    import datetime as _d
+    td = _d.date.today()
+    week_start = (td - _d.timedelta(days=td.weekday())).isoformat()
+    shifts = get_shifts_for_caregiver_range(caregiver_id, week_start, td.isoformat())
+    rate = get_caregiver_pay_rate(caregiver_id)
+    hours = sum(_calc_shift_hours(s) for s in shifts)
+    return {"hours": round(hours, 2), "earnings": round(hours * rate, 2), "shifts": len(shifts)}
+
+
+def get_month_stats(caregiver_id: int) -> dict:
+    import datetime as _d
+    td = _d.date.today()
+    shifts = get_shifts_for_caregiver_range(caregiver_id, td.replace(day=1).isoformat(), td.isoformat())
+    rate = get_caregiver_pay_rate(caregiver_id)
+    hours = sum(_calc_shift_hours(s) for s in shifts)
+    return {"hours": round(hours, 2), "earnings": round(hours * rate, 2), "shifts": len(shifts)}
+
+
+def get_ytd_stats(caregiver_id: int) -> dict:
+    import datetime as _d
+    td = _d.date.today()
+    shifts = get_shifts_for_caregiver_range(caregiver_id, td.replace(month=1, day=1).isoformat(), td.isoformat())
+    rate = get_caregiver_pay_rate(caregiver_id)
+    hours = sum(_calc_shift_hours(s) for s in shifts)
+    return {"hours": round(hours, 2), "earnings": round(hours * rate, 2), "shifts": len(shifts)}
+
+
+def get_or_create_current_pay_period() -> dict:
+    import datetime as _d
+    td = _d.date.today()
+    period_start = td.replace(day=1).isoformat()
+    nm = td.replace(day=28) + _d.timedelta(days=4)
+    period_end = (nm - _d.timedelta(days=nm.day)).isoformat()
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM pay_periods WHERE period_start=? LIMIT 1", (period_start,)).fetchone()
+        if not row:
+            conn.execute("INSERT INTO pay_periods (period_start, period_end, status) VALUES (?,?,?)", (period_start, period_end, "open"))
+            conn.commit()
+            row = conn.execute("SELECT * FROM pay_periods WHERE period_start=? LIMIT 1", (period_start,)).fetchone()
+    return _row_to_dict(row)
+
+
+def get_pay_periods(limit: int = 12) -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM pay_periods ORDER BY period_start DESC LIMIT ?", (limit,)).fetchall()
+    return _rows_to_dicts(rows)
+
+
+def get_hours_worked(caregiver_id: int, start: str, end: str) -> float:
+    shifts = get_shifts_for_caregiver_range(caregiver_id, start, end)
+    return round(sum(_calc_shift_hours(s) for s in shifts if s.get("status") != "cancelled"), 2)
+
+
+def update_caregiver_availability(caregiver_id: int, availability_json: str) -> None:
+    with get_conn() as conn:
+        conn.execute("UPDATE caregivers SET availability_json=? WHERE id=?", (availability_json, caregiver_id))
+        conn.commit()

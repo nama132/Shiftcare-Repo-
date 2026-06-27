@@ -280,10 +280,15 @@ def admin_fix_coverage_data():
         db.update_caregiver_availability(cg_id, full_week)
         log_lines.append(f"Set availability for caregiver ID {cg_id}")
 
-    # Delete the duplicate OLD records.
-    for cg_id in (1, 2):  # Maria old (+15714662908), Priya old (+14436360988)
-        db.delete_caregiver(cg_id)
-        log_lines.append(f"Deleted duplicate caregiver ID {cg_id}")
+    # Delete the duplicate OLD records (must clear dependent rows first to
+    # satisfy foreign-key constraints in Postgres).
+    with db.get_conn() as _conn:
+        for cg_id in (1, 2):  # Maria old (+15714662908), Priya old (+14436360988)
+            _conn.execute("DELETE FROM pending_coverage WHERE caregiver_id = ?", (cg_id,))
+            _conn.execute("DELETE FROM shifts WHERE caregiver_id = ?", (cg_id,))
+            _conn.execute("DELETE FROM caregivers WHERE id = ?", (cg_id,))
+            log_lines.append(f"Deleted duplicate caregiver ID {cg_id} (and its shifts/pending rows)")
+        _conn.commit()
 
     # Report final state
     remaining = db.get_all_caregivers()

@@ -123,6 +123,7 @@
       {% if selected == today %}<span class="today-badge">TODAY</span>{% endif %}
     </span>
     <a href="/dashboard?date={{ next_date }}">Next →</a>
+    <a href="{{ url_for('admin_caregivers') }}" style="margin-left: auto;">Admin Panel →</a>
   </div>
 
   {% if shifts %}

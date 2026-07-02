@@ -426,14 +426,6 @@ def admin_contacts():
     return render_template("admin/contacts.html", submissions=submissions)
 
 
-@app.route("/admin/debug/seed-messages-xk9m2")
-@require_admin
-def admin_seed_messages():
-    """One-off: seed demo conversation data for the Messages view. Remove after use."""
-    n = db.seed_demo_messages()
-    return f"Seeded {n} demo messages. Total now: {db.count_messages()}."
-
-
 @app.route("/admin/messages")
 @require_admin
 def admin_messages():

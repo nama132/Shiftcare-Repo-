@@ -44,11 +44,23 @@ def _twilio_client():
     return _TWILIO_CLIENT
 
 
+def _log_outbound(to: str, body: str) -> None:
+    """Record an outbound message to the admin communication log. Best-effort."""
+    try:
+        import db
+        name, role = db.resolve_party(to)
+        db.log_message("outbound", to, body, party_name=name, party_role=role)
+    except Exception:
+        pass
+
+
 def send_sms(to: str, body: str) -> bool:
     """Send an SMS via Telnyx, Twilio, or Vonage (controlled by SMS_PROVIDER env var).
 
     If DRY_RUN_SMS=1 is set, logs the message instead of sending.
     """
+    _log_outbound(to, body)
+
     if os.getenv("DRY_RUN_SMS") == "1":
         log.warning("[DRY_RUN_SMS] → %s: %s", to, body)
         return True

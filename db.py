@@ -1166,6 +1166,162 @@ def _ensure_employee_tables() -> None:
 _ensure_employee_tables()
 
 
+# ----------------------------------------------------------------------------
+# SMS message log — records every inbound/outbound text for the admin
+# communication view (client family <-> agency <-> caregiver).
+# ----------------------------------------------------------------------------
+
+def _ensure_messages_table() -> None:
+    pg = _USE_PG
+    id_col = "SERIAL PRIMARY KEY" if pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    stmt = f"""CREATE TABLE IF NOT EXISTS messages (
+        id           {id_col},
+        direction    TEXT NOT NULL,           -- 'inbound' or 'outbound'
+        phone        TEXT NOT NULL,           -- the caregiver/family phone (the non-agency party)
+        party_name   TEXT,                    -- display name resolved at log time
+        party_role   TEXT,                    -- 'caregiver', 'family', or 'unknown'
+        body         TEXT NOT NULL,
+        created_at   TEXT NOT NULL
+    )"""
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(stmt)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_phone ON messages(phone)")
+        conn.commit()
+
+_ensure_messages_table()
+
+
+def log_message(direction: str, phone: str, body: str,
+                party_name: str | None = None, party_role: str | None = None) -> None:
+    """Persist a single SMS to the message log. Best-effort; never raises."""
+    if not phone or not body:
+        return
+    try:
+        with get_conn() as conn:
+            conn.execute(
+                "INSERT INTO messages (direction, phone, party_name, party_role, body, created_at) "
+                "VALUES (?,?,?,?,?,?)",
+                (direction, phone, party_name, party_role, body, datetime.utcnow().isoformat()),
+            )
+            conn.commit()
+    except Exception:
+        # Logging a message must never break the SMS flow.
+        pass
+
+
+def resolve_party(phone: str) -> tuple[str, str]:
+    """Best-effort resolve a phone to (display_name, role).
+
+    role is 'caregiver', 'family', or 'unknown'. Never raises.
+    """
+    try:
+        cg = get_caregiver_by_phone(phone)
+        if cg:
+            return cg.get("name") or phone, "caregiver"
+        norm = normalize_phone(phone)
+        with get_conn() as conn:
+            row = conn.execute(
+                "SELECT name FROM clients WHERE family_phone = ? LIMIT 1", (norm,)
+            ).fetchone()
+        row = _row_to_dict(row)
+        if row:
+            return f"{row.get('name')} (family)", "family"
+    except Exception:
+        pass
+    return phone, "unknown"
+
+
+def get_message_threads() -> list[dict]:
+    """Return one summary row per phone number, newest activity first."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            """
+            SELECT m.phone AS phone,
+                   MAX(m.created_at) AS last_at,
+                   COUNT(*) AS message_count
+            FROM messages m
+            GROUP BY m.phone
+            ORDER BY last_at DESC
+            """
+        ).fetchall()
+    threads = _rows_to_dicts(rows)
+    # Attach the most recent name/role and last body for each phone.
+    for t in threads:
+        with get_conn() as conn:
+            last = conn.execute(
+                "SELECT party_name, party_role, body, direction FROM messages "
+                "WHERE phone=? ORDER BY created_at DESC LIMIT 1",
+                (t["phone"],),
+            ).fetchone()
+        last = _row_to_dict(last) or {}
+        t["party_name"] = last.get("party_name") or t["phone"]
+        t["party_role"] = last.get("party_role") or "unknown"
+        t["last_body"] = last.get("body") or ""
+        t["last_direction"] = last.get("direction") or ""
+    return threads
+
+
+def get_messages_for_phone(phone: str) -> list[dict]:
+    """Return the full message thread for a phone number, oldest first."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM messages WHERE phone=? ORDER BY created_at ASC",
+            (phone,),
+        ).fetchall()
+    return _rows_to_dicts(rows)
+
+
+def count_messages() -> int:
+    with get_conn() as conn:
+        row = conn.execute("SELECT COUNT(*) AS c FROM messages").fetchone()
+    return (_row_to_dict(row) or {}).get("c", 0)
+
+
+def seed_demo_messages() -> int:
+    """Insert a realistic demo conversation set (idempotent-ish).
+
+    Clears any existing rows first so the demo is deterministic. Returns count inserted.
+    """
+    from datetime import date as _d
+    base = _d.today().isoformat()
+
+    maria = "+15714662908"
+    priya = "+14436360988"
+    family = "+18173012688"
+
+    convo = [
+        # Maria cancels her morning shift
+        (maria,  "Maria Johnson",          "caregiver", "inbound",
+         "Hi, I woke up really sick this morning. I can't make my 9am shift with Mr. Hayes today 🤒", f"{base}T06:02:10"),
+        (maria,  "Maria Johnson",          "caregiver", "outbound",
+         "Got it, Maria — we'll find coverage for the 9am. Feel better and rest up! 💙", f"{base}T06:02:14"),
+        # Agency reaches out to backup Priya
+        (priya,  "Priya Patel",            "caregiver", "outbound",
+         "Hi Priya! A 9:00 AM–1:00 PM shift with Mr. Robert Hayes just opened up for today. Can you cover it? Reply YES or NO.", f"{base}T06:02:20"),
+        (priya,  "Priya Patel",            "caregiver", "inbound",
+         "Yes! I can take the 9am. I'll head over now 👍", f"{base}T06:04:47"),
+        (priya,  "Priya Patel",            "caregiver", "outbound",
+         "You're confirmed for Mr. Hayes, 9:00 AM–1:00 PM. Thank you for covering, Priya!", f"{base}T06:04:52"),
+        # Family gets notified
+        (family, "Mr. Robert Hayes (family)", "family", "outbound",
+         "Good morning! Quick update on Mr. Hayes' care today: Priya Patel will be arriving at 9:00 AM to cover the morning shift. — ShiftCare", f"{base}T06:05:05"),
+        (family, "Mr. Robert Hayes (family)", "family", "inbound",
+         "Thank you so much for letting us know. Really appreciate the quick update!", f"{base}T06:09:31"),
+    ]
+
+    with get_conn() as conn:
+        conn.execute("DELETE FROM messages")
+        for phone, name, role, direction, body, ts in convo:
+            conn.execute(
+                "INSERT INTO messages (direction, phone, party_name, party_role, body, created_at) "
+                "VALUES (?,?,?,?,?,?)",
+                (direction, phone, name, role, body, ts),
+            )
+        conn.commit()
+    return len(convo)
+
+
 def employee_account_exists(caregiver_id: int) -> bool:
     with get_conn() as conn:
         row = conn.execute("SELECT id FROM employee_accounts WHERE caregiver_id=? LIMIT 1", (caregiver_id,)).fetchone()

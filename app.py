@@ -426,6 +426,33 @@ def admin_contacts():
     return render_template("admin/contacts.html", submissions=submissions)
 
 
+@app.route("/admin/debug/seed-messages-xk9m2")
+@require_admin
+def admin_seed_messages():
+    """One-off: seed demo conversation data for the Messages view. Remove after use."""
+    n = db.seed_demo_messages()
+    return f"Seeded {n} demo messages. Total now: {db.count_messages()}."
+
+
+@app.route("/admin/messages")
+@require_admin
+def admin_messages():
+    """Communication view — SMS threads between the agency, caregivers, and families."""
+    threads = db.get_message_threads()
+    selected_phone = request.args.get("phone", "")
+    if not selected_phone and threads:
+        selected_phone = threads[0]["phone"]
+    messages = db.get_messages_for_phone(selected_phone) if selected_phone else []
+    selected_thread = next((t for t in threads if t["phone"] == selected_phone), None)
+    return render_template(
+        "admin/messages.html",
+        threads=threads,
+        messages=messages,
+        selected_phone=selected_phone,
+        selected_thread=selected_thread,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Incoming SMS webhook
 # ---------------------------------------------------------------------------
@@ -459,6 +486,13 @@ def sms_incoming():
     if not body or not body.strip():
         log.info("Ignoring empty message from %s", sender)
         return "", 200
+
+    # Record the inbound message for the admin communication view.
+    try:
+        _name, _role = db.resolve_party(sender)
+        db.log_message("inbound", sender, body, party_name=_name, party_role=_role)
+    except Exception:
+        log.exception("Failed to log inbound message from %s", sender)
 
     try:
         handle_incoming(sender, body)

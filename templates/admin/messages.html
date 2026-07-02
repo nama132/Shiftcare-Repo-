@@ -1,0 +1,89 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>💬 Messages</h1>
+</div>
+<p style="color:#718096;margin-bottom:20px;font-size:0.9rem">
+  Every text between the agency, caregivers, and client families — automatically logged.
+</p>
+
+<style>
+  .msg-layout { display: flex; gap: 20px; align-items: flex-start; }
+  .thread-list { width: 300px; flex-shrink: 0; }
+  .thread-list .card { padding: 0; }
+  .thread-item { display: block; padding: 14px 16px; text-decoration: none;
+                 color: #1a1a2e; border-bottom: 1px solid #f0f0f0; transition: background .15s; }
+  .thread-item:last-child { border-bottom: none; }
+  .thread-item:hover { background: #f8fafc; }
+  .thread-item.active { background: #eef2ff; border-left: 3px solid #4f46e5; }
+  .thread-name { font-weight: 600; font-size: 0.9rem; display: flex;
+                 justify-content: space-between; align-items: center; }
+  .thread-preview { color: #718096; font-size: 0.8rem; margin-top: 4px;
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .role-tag { font-size: 0.65rem; font-weight: 600; padding: 1px 7px;
+              border-radius: 999px; text-transform: uppercase; letter-spacing: .03em; }
+  .role-caregiver { background: #c6f6d5; color: #22543d; }
+  .role-family    { background: #bee3f8; color: #2a4365; }
+  .role-unknown   { background: #e2e8f0; color: #4a5568; }
+  .conversation { flex: 1; }
+  .conv-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0;
+                 font-weight: 600; display: flex; align-items: center; gap: 10px; }
+  .conv-body { padding: 20px; display: flex; flex-direction: column; gap: 12px;
+               max-height: 60vh; overflow-y: auto; background: #f8fafc; }
+  .bubble { max-width: 72%; padding: 10px 14px; border-radius: 14px;
+            font-size: 0.9rem; line-height: 1.35; position: relative; }
+  .bubble .meta { font-size: 0.68rem; color: #94a3b8; margin-top: 5px; }
+  .bubble.inbound { align-self: flex-start; background: #fff;
+                    border: 1px solid #e2e8f0; border-bottom-left-radius: 4px; }
+  .bubble.outbound { align-self: flex-end; background: #4f46e5; color: #fff;
+                     border-bottom-right-radius: 4px; }
+  .bubble.outbound .meta { color: #c7d2fe; }
+  .empty { padding: 40px; text-align: center; color: #94a3b8; }
+</style>
+
+<div class="msg-layout">
+  <div class="thread-list">
+    <div class="card">
+      {% for t in threads %}
+      <a href="{{ url_for('admin_messages', phone=t.phone) }}"
+         class="thread-item {{ 'active' if t.phone == selected_phone }}">
+        <div class="thread-name">
+          <span>{{ t.party_name }}</span>
+          <span class="role-tag role-{{ t.party_role }}">{{ t.party_role }}</span>
+        </div>
+        <div class="thread-preview">
+          {{ '→ ' if t.last_direction == 'outbound' else '' }}{{ t.last_body }}
+        </div>
+      </a>
+      {% else %}
+      <div class="empty">No conversations yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="conversation">
+    <div class="card">
+      {% if selected_thread %}
+      <div class="conv-header">
+        {{ selected_thread.party_name }}
+        <span class="role-tag role-{{ selected_thread.party_role }}">{{ selected_thread.party_role }}</span>
+        <span style="color:#94a3b8;font-weight:400;font-size:0.8rem">· {{ selected_phone }}</span>
+      </div>
+      <div class="conv-body">
+        {% for m in messages %}
+        <div class="bubble {{ m.direction }}">
+          {{ m.body }}
+          <div class="meta">
+            {{ 'ShiftCare' if m.direction == 'outbound' else m.party_name }}
+            · {{ m.created_at[:16].replace('T', ' ') }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty">Select a conversation to view the message history.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

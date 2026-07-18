@@ -162,9 +162,6 @@ def _today_iso() -> str:
 def wipe() -> None:
     with get_conn() as conn:
         for stmt in [
-            "DELETE FROM shift_ratings",
-            "DELETE FROM scheduling_suggestions",
-            "DELETE FROM checkins",
             "DELETE FROM family_tokens",
             "DELETE FROM conversation_state",
             "DELETE FROM pending_coverage",

@@ -23,6 +23,80 @@ MODEL = "claude-haiku-4-5-20251001"
 _ANTHROPIC = None
 
 
+# ---------------------------------------------------------------------------
+# Deterministic pre-classifier — guarantees common phrasings always work,
+# independent of the (non-deterministic) LLM. Also saves API calls for
+# unambiguous yes/no replies.
+# ---------------------------------------------------------------------------
+
+# Callout / cancellation signals (substring match on lowercased text).
+_CANCEL_KEYWORDS = (
+    "cancel", "calling out", "call out", "call off", "callout",
+    "won't make", "wont make", "can't make", "cant make", "cannot make",
+    "won't be in", "wont be in", "not coming", "can't come", "cant come",
+    "won't come", "wont come", "not gonna make", "not going to make",
+    "can't come in", "cant come in", "won't be able to make",
+    "sick", "not feeling well", "under the weather", "fever", "throwing up",
+    "vomiting", "food poisoning", "family emergency", "emergency",
+    "car broke", "car broke down", "staying home", "out sick", "running a fever",
+)
+
+# Affirmative replies (accept a coverage request).
+_AFFIRM_WORDS = frozenset({
+    "yes", "y", "yep", "yeah", "yup", "ya", "yea", "sure", "ok", "okay",
+    "k", "kk", "absolutely", "definitely", "yessir", "affirmative", "👍",
+})
+_AFFIRM_PHRASES = (
+    "i can cover", "i'll take it", "ill take it", "i can take", "i will take",
+    "count me in", "i'm in", "im in", "i got it", "i've got it", "on it",
+    "will do", "sounds good", "happy to", "i can do it",
+)
+
+# Negative replies (decline a coverage request).
+_DECLINE_WORDS = frozenset({
+    "no", "n", "nope", "nah", "naw", "pass", "decline", "cannot", "unable", "👎",
+})
+_DECLINE_PHRASES = (
+    "can't cover", "cant cover", "cannot cover", "can't take", "cant take",
+    "not able", "no thanks", "no can do", "can't do it", "cant do it",
+    "sorry can't", "sorry i cant", "won't be able to cover",
+)
+
+
+def _deterministic_intent(text: str) -> str | None:
+    """Return a confident intent for unambiguous messages, else None.
+
+    Order matters: callout signals first, then affirmative (so "yep no problem"
+    resolves to confirm), then negative.
+    """
+    t = " ".join(text.lower().split())
+    if not t:
+        return None
+
+    # 1) Callout / cancellation signals.
+    for kw in _CANCEL_KEYWORDS:
+        if kw in t:
+            return "cancel_shift"
+
+    # Word/phrase-level checks on a punctuation-stripped copy (keep apostrophes).
+    stripped = re.sub(r"[^a-z0-9' ]", " ", t)
+    stripped = " ".join(stripped.split())
+    words = stripped.split()
+    first = words[0] if words else ""
+
+    # 2) Affirmative → confirm coverage.
+    if (stripped in _AFFIRM_WORDS or first in _AFFIRM_WORDS
+            or any(p in stripped for p in _AFFIRM_PHRASES) or "👍" in t):
+        return "confirm_coverage"
+
+    # 3) Negative → decline coverage.
+    if (stripped in _DECLINE_WORDS or first in _DECLINE_WORDS
+            or any(p in stripped for p in _DECLINE_PHRASES) or "👎" in t):
+        return "decline_coverage"
+
+    return None
+
+
 def _client():
     global _ANTHROPIC
     if _ANTHROPIC is not None:
@@ -43,7 +117,9 @@ Return ONLY valid JSON (no prose, no markdown fences) with these exact fields:
     * "cancel_shift"      — caregiver is calling out / cancelling their OWN scheduled shift
                             (e.g. "I'm sick", "can't make it", "won't be in", "calling out")
     * "confirm_coverage"  — caregiver is accepting a COVERAGE REQUEST sent to them (replying YES)
+                            (e.g. "yes", "ok", "sure", "yep", "i'll take it", "count me in")
     * "decline_coverage"  — caregiver is declining a COVERAGE REQUEST sent to them (replying NO)
+                            (e.g. "no", "nope", "nah", "pass", "can't cover", "no thanks")
     * "other"             — anything else
 - "reason": a short string describing the reason, or null
 - "shift_time": a time mentioned in the message (e.g. "9am", "2:30pm"), or null
@@ -73,6 +149,13 @@ def parse_message(text: str) -> dict:
     fallback = {"intent": "other", "reason": None, "shift_time": None, "shift_date": None}
     if not text or not text.strip():
         return fallback
+
+    # Deterministic fast path — guarantees common phrasings always work and
+    # skips the API for unambiguous accept/decline replies.
+    det = _deterministic_intent(text)
+    if det in ("confirm_coverage", "decline_coverage"):
+        return {"intent": det, "reason": None, "shift_time": None, "shift_date": None}
+
     try:
         resp = _client().messages.create(
             model=MODEL,
@@ -84,6 +167,10 @@ def parse_message(text: str) -> dict:
         intent = data.get("intent")
         if intent not in ("cancel_shift", "confirm_coverage", "decline_coverage", "other"):
             intent = "other"
+        # Safety net: if the model missed a clear intent, trust the
+        # deterministic classifier instead of returning "other".
+        if intent == "other" and det is not None:
+            intent = det
         return {
             "intent": intent,
             "reason": data.get("reason") or None,
@@ -92,7 +179,9 @@ def parse_message(text: str) -> dict:
         }
     except Exception as exc:
         log.warning("parse_message fallback for %r: %s", text, exc)
-        # Heuristic fallback so the app degrades gracefully without the API
+        # Heuristic fallback so the app degrades gracefully without the API.
+        if det is not None:
+            return {"intent": det, "reason": "heuristic", "shift_time": None, "shift_date": None}
         lowered = text.lower().strip()
         if any(k in lowered for k in ("can't make", "cant make", "cancel", "sick", "calling out", "call out")):
             return {"intent": "cancel_shift", "reason": "heuristic", "shift_time": None, "shift_date": None}

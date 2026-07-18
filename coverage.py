@@ -92,8 +92,9 @@ def initiate_coverage_hunt(shift_id: int) -> list[dict]:
         return []
 
     body = _coverage_request_body(client, shift)
+    original_caregiver_id = shift["caregiver_id"]
     for cg in candidates:
-        db.add_pending_candidate(shift_id, cg["id"], cg["phone"])
+        db.add_pending_candidate(shift_id, cg["id"], cg["phone"], original_caregiver_id)
         send_sms(cg["phone"], body)
 
     log.info("Coverage hunt: contacted %d caregivers for shift %s", len(candidates), shift_id)

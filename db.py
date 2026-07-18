@@ -334,6 +334,16 @@ def create_tables() -> None:
         except Exception:
             # Column already exists, skip migration
             pass
+    # Migration: add original_caregiver_id to pending_coverage so the coverage
+    # log can show who originally called out, even after the shift is claimed
+    # and shifts.caregiver_id is overwritten with the new holder.
+    with get_conn() as conn:
+        try:
+            conn.execute("ALTER TABLE pending_coverage ADD COLUMN original_caregiver_id INTEGER")
+            conn.commit()
+        except Exception:
+            # Column already exists, skip migration
+            pass
 
 
 def save_contact_submission(name: str, email: str, agency: str, message: str) -> None:
@@ -739,14 +749,26 @@ def get_available_caregivers(
 # Pending coverage tracker
 # ----------------------------------------------------------------------------
 
-def add_pending_candidate(shift_id: int, caregiver_id: int, phone: str) -> None:
+def add_pending_candidate(
+    shift_id: int,
+    caregiver_id: int,
+    phone: str,
+    original_caregiver_id: int | None = None,
+) -> None:
     with get_conn() as conn:
         conn.execute(
             """
-            INSERT INTO pending_coverage (shift_id, caregiver_id, phone, requested_at, status)
-            VALUES (?, ?, ?, ?, 'pending')
+            INSERT INTO pending_coverage
+                (shift_id, caregiver_id, phone, requested_at, status, original_caregiver_id)
+            VALUES (?, ?, ?, ?, 'pending', ?)
             """,
-            (shift_id, caregiver_id, normalize_phone(phone), datetime.utcnow().isoformat()),
+            (
+                shift_id,
+                caregiver_id,
+                normalize_phone(phone),
+                datetime.utcnow().isoformat(),
+                original_caregiver_id,
+            ),
         )
         conn.commit()
 
@@ -1094,6 +1116,12 @@ def delete_shift(sid: int) -> None:
 # ----------------------------------------------------------------------------
 
 def get_coverage_log(date: str | None = None) -> list[dict]:
+    # original_caregiver is derived from pending_coverage.original_caregiver_id
+    # (captured at coverage-hunt time), NOT from the live shifts.caregiver_id —
+    # that column gets overwritten with the new holder once someone claims the
+    # shift, which previously caused the log to misattribute the cancellation.
+    # COALESCE falls back to the live shift's caregiver for legacy rows created
+    # before this column existed (original_caregiver_id will be NULL there).
     query = """
         SELECT
             s.date,
@@ -1104,7 +1132,7 @@ def get_coverage_log(date: str | None = None) -> list[dict]:
             pc.status
         FROM pending_coverage pc
         JOIN shifts      s        ON s.id         = pc.shift_id
-        LEFT JOIN caregivers cg_orig ON cg_orig.id = s.caregiver_id
+        LEFT JOIN caregivers cg_orig ON cg_orig.id = COALESCE(pc.original_caregiver_id, s.caregiver_id)
         LEFT JOIN clients    cl      ON cl.id       = s.client_id
         LEFT JOIN caregivers cg_cand ON cg_cand.id  = pc.caregiver_id
     """

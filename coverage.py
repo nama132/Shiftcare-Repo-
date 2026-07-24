@@ -206,6 +206,46 @@ def send_family_notification(shift_id: int) -> None:
     send_sms(client["family_phone"], body)
 
 
+def _family_shift_context(shift_id: int):
+    """Shared lookup for check-in/out family notifications."""
+    shift = db.get_shift_by_id(shift_id)
+    if not shift:
+        return None
+    client = db.get_client_by_id(shift["client_id"])
+    caregiver = db.get_caregiver_by_id(shift["caregiver_id"]) if shift["caregiver_id"] else None
+    if not client or not caregiver or not client.get("family_phone"):
+        return None
+    token = db.create_family_token(shift_id)
+    base_url = os.getenv("BASE_URL", "http://localhost:5000").rstrip("/")
+    return shift, client, caregiver, f"{base_url}/client/{token}"
+
+
+def send_family_checkin_notification(shift_id: int) -> None:
+    """🟢 caregiver is on site."""
+    ctx = _family_shift_context(shift_id)
+    if not ctx:
+        return
+    shift, client, caregiver, portal_link = ctx
+    body = (
+        f"🟢 {caregiver['name']} has arrived at {client['name']}'s home and the "
+        f"visit is underway. Follow along: {portal_link}"
+    )
+    send_sms(client["family_phone"], body)
+
+
+def send_family_checkout_notification(shift_id: int) -> None:
+    """✅ visit complete + rating link."""
+    ctx = _family_shift_context(shift_id)
+    if not ctx:
+        return
+    shift, client, caregiver, portal_link = ctx
+    body = (
+        f"✅ Today's visit for {client['name']} is complete — {caregiver['name']} "
+        f"has checked out. How did it go? Rate the visit: {portal_link}"
+    )
+    send_sms(client["family_phone"], body)
+
+
 def send_owner_summary(shift_id: int, original_caregiver_name: str | None = None) -> None:
     owner = os.getenv("OWNER_PHONE")
     if not owner:

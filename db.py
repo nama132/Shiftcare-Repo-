@@ -1184,6 +1184,13 @@ def _ensure_employee_tables() -> None:
             period_end   TEXT NOT NULL,
             status       TEXT NOT NULL DEFAULT 'open'
         )""",
+        f"""CREATE TABLE IF NOT EXISTS shift_ratings (
+            id          {id_col},
+            shift_id    INTEGER NOT NULL UNIQUE,
+            stars       INTEGER NOT NULL,
+            comment     TEXT,
+            created_at  TEXT NOT NULL
+        )""",
     ]
     with get_conn() as conn:
         cur = conn.cursor()
@@ -1442,6 +1449,77 @@ def is_clocked_in(shift_id: int, caregiver_id: int) -> bool:
 def get_clock_events_for_shift(shift_id: int) -> list[dict]:
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM clock_events WHERE shift_id=? ORDER BY recorded_at", (shift_id,)).fetchall()
+    return _rows_to_dicts(rows)
+
+
+# ----------------------------------------------------------------------------
+# SMS check-in/out (ARRIVED / DONE) — reuses clock_events as the single
+# source of truth for both web and SMS check-ins.
+# ----------------------------------------------------------------------------
+
+def find_checkin_shift(caregiver_id: int, date: str) -> dict | None:
+    """The shift a caregiver would be checking in/out of today.
+
+    Prefers a shift they haven't finished yet ('scheduled'/'covered'/'active').
+    """
+    with get_conn() as conn:
+        row = conn.execute(
+            """SELECT * FROM shifts
+               WHERE caregiver_id=? AND date=?
+                 AND status IN ('scheduled','covered','active')
+               ORDER BY start_time LIMIT 1""",
+            (caregiver_id, date),
+        ).fetchone()
+    return _row_to_dict(row)
+
+
+def sms_check_in(shift_id: int, caregiver_id: int) -> None:
+    """Record an SMS check-in: clock event + shift becomes 'active'."""
+    clock_in(shift_id, caregiver_id)
+    update_shift_status(shift_id, "active")
+
+
+def sms_check_out(shift_id: int, caregiver_id: int) -> None:
+    """Record an SMS check-out: clock event + shift becomes 'completed'."""
+    clock_out(shift_id, caregiver_id)
+    update_shift_status(shift_id, "completed")
+
+
+# ----------------------------------------------------------------------------
+# Shift ratings — family feedback captured via the client portal
+# ----------------------------------------------------------------------------
+
+def record_rating(shift_id: int, stars: int, comment: str | None = None) -> None:
+    """Save (or replace) the family rating for a shift."""
+    with get_conn() as conn:
+        conn.execute("DELETE FROM shift_ratings WHERE shift_id=?", (shift_id,))
+        conn.execute(
+            "INSERT INTO shift_ratings (shift_id, stars, comment, created_at) VALUES (?,?,?,?)",
+            (shift_id, stars, comment, datetime.utcnow().isoformat()),
+        )
+        conn.commit()
+
+
+def get_rating_for_shift(shift_id: int) -> dict | None:
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM shift_ratings WHERE shift_id=?", (shift_id,)
+        ).fetchone()
+    return _row_to_dict(row)
+
+
+def get_all_ratings() -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            """SELECT r.id, r.shift_id, r.stars, r.comment, r.created_at,
+                      s.date, s.start_time, s.end_time,
+                      cg.name AS caregiver_name, cl.name AS client_name
+               FROM shift_ratings r
+               JOIN shifts s        ON s.id  = r.shift_id
+               LEFT JOIN caregivers cg ON cg.id = s.caregiver_id
+               JOIN clients cl      ON cl.id = s.client_id
+               ORDER BY r.created_at DESC""",
+        ).fetchall()
     return _rows_to_dicts(rows)
 
 

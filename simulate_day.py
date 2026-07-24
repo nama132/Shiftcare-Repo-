@@ -20,7 +20,8 @@ import urllib.request, urllib.parse
 
 BASE  = "http://127.0.0.1:5001"
 DB    = "shiftcare.db"
-TODAY = "2026-05-25"
+from datetime import date as _date
+TODAY = _date.today().isoformat()
 
 # ── Caregiver phones (from seed data) ─────────────────────────────────────────
 MARIA = "+12029927121"   # id=1  CNA,HHA      zip 20001
@@ -288,7 +289,7 @@ dbw(
     (TODAY,),
 )
 dbw("UPDATE shifts SET date=?, status='covered', caregiver_id=6 WHERE id=6", (TODAY,))
-dbw("DELETE FROM checkins WHERE shift_id=6")
+dbw("DELETE FROM clock_events WHERE shift_id=6")
 dbw("DELETE FROM shift_ratings WHERE shift_id=6")
 
 import db as _db
@@ -301,12 +302,12 @@ info("Priya texts: ARRIVED")
 sms(PRIYA, "ARRIVED")
 
 shift = q1("SELECT status FROM shifts WHERE id=6")
-ci    = q1("SELECT check_in_at, check_out_at FROM checkins WHERE shift_id=6")
+ci    = q1("SELECT recorded_at FROM clock_events WHERE shift_id=6 AND event_type='clock_in' ORDER BY recorded_at DESC LIMIT 1")
 check("Shift 6 status = 'active'",           shift["status"] == "active",       shift["status"])
-check("Check-in timestamp recorded",          ci is not None and ci["check_in_at"] is not None)
+check("Check-in timestamp recorded",          ci is not None and ci["recorded_at"] is not None)
 check("Family SMS sent (🟢 caregiver on site, see log)", True)
 if ci:
-    info(f"Checked in at: {ci['check_in_at']}")
+    info(f"Checked in at: {ci['recorded_at']}")
 
 time.sleep(0.5)
 
@@ -315,12 +316,12 @@ info("Priya texts: DONE")
 sms(PRIYA, "DONE")
 
 shift = q1("SELECT status FROM shifts WHERE id=6")
-co    = q1("SELECT check_in_at, check_out_at FROM checkins WHERE shift_id=6")
+co    = q1("SELECT recorded_at FROM clock_events WHERE shift_id=6 AND event_type='clock_out' ORDER BY recorded_at DESC LIMIT 1")
 check("Shift 6 status = 'completed'",         shift["status"] == "completed",    shift["status"])
-check("Check-out timestamp recorded",          co is not None and co["check_out_at"] is not None)
+check("Check-out timestamp recorded",          co is not None and co["recorded_at"] is not None)
 check("Family SMS sent (✅ visit complete + rating link, see log)", True)
 if co:
-    info(f"Checked out at: {co['check_out_at']}")
+    info(f"Checked out at: {co['recorded_at']}")
 
 # ── Family submits 5-star rating via portal
 info("Family opens portal and submits 5-star rating...")

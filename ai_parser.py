@@ -1,7 +1,8 @@
 """Claude-powered SMS intent parser.
 
 Returns a dict like:
-    {"intent": "cancel_shift"|"confirm_coverage"|"decline_coverage"|"other",
+    {"intent": "cancel_shift"|"confirm_coverage"|"decline_coverage"
+              |"check_in"|"check_out"|"other",
      "reason": str|None,
      "shift_time": str|None}
 """
@@ -62,6 +63,29 @@ _DECLINE_PHRASES = (
     "sorry can't", "sorry i cant", "won't be able to cover",
 )
 
+# Check-in signals (caregiver arrived on site).
+_CHECKIN_WORDS = frozenset({
+    "arrived", "arrive", "here", "onsite", "on-site", "checkin", "checkedin",
+})
+_CHECKIN_PHRASES = (
+    "i'm here", "im here", "i have arrived", "i've arrived", "ive arrived",
+    "just arrived", "on site", "at the house", "at the client", "checking in",
+    "checked in", "clocking in", "clock in", "clock me in", "starting my shift",
+    "starting shift", "made it",
+)
+
+# Check-out signals (caregiver finished the visit).
+_CHECKOUT_WORDS = frozenset({
+    "done", "finished", "complete", "completed", "checkout", "checkedout",
+    "leaving", "departing",
+})
+_CHECKOUT_PHRASES = (
+    "all done", "i'm done", "im done", "visit complete", "visit done",
+    "shift done", "shift complete", "finished up", "wrapping up", "heading out",
+    "checking out", "checked out", "clocking out", "clock out", "clock me out",
+    "leaving now", "all set here", "ending my shift",
+)
+
 
 def _deterministic_intent(text: str) -> str | None:
     """Return a confident intent for unambiguous messages, else None.
@@ -84,12 +108,20 @@ def _deterministic_intent(text: str) -> str | None:
     words = stripped.split()
     first = words[0] if words else ""
 
-    # 2) Affirmative → confirm coverage.
+    # 2) Check-in / check-out. Exact-word match only (a bare "ARRIVED" or
+    #    "DONE") plus explicit phrases — kept strict so ordinary replies
+    #    ("will do", "no thanks") never collide with these.
+    if stripped in _CHECKIN_WORDS or any(p in stripped for p in _CHECKIN_PHRASES):
+        return "check_in"
+    if stripped in _CHECKOUT_WORDS or any(p in stripped for p in _CHECKOUT_PHRASES):
+        return "check_out"
+
+    # 3) Affirmative → confirm coverage.
     if (stripped in _AFFIRM_WORDS or first in _AFFIRM_WORDS
             or any(p in stripped for p in _AFFIRM_PHRASES) or "👍" in t):
         return "confirm_coverage"
 
-    # 3) Negative → decline coverage.
+    # 4) Negative → decline coverage.
     if (stripped in _DECLINE_WORDS or first in _DECLINE_WORDS
             or any(p in stripped for p in _DECLINE_PHRASES) or "👎" in t):
         return "decline_coverage"
@@ -112,7 +144,7 @@ def _client():
 
 _PROMPT = """You are parsing a text from a home care agency caregiver.
 Return ONLY valid JSON (no prose, no markdown fences) with these exact fields:
-- "intent": one of ["cancel_shift", "confirm_coverage", "decline_coverage", "other"]
+- "intent": one of ["cancel_shift", "confirm_coverage", "decline_coverage", "check_in", "check_out", "other"]
   Rules:
     * "cancel_shift"      — caregiver is calling out / cancelling their OWN scheduled shift
                             (e.g. "I'm sick", "can't make it", "won't be in", "calling out")
@@ -120,6 +152,10 @@ Return ONLY valid JSON (no prose, no markdown fences) with these exact fields:
                             (e.g. "yes", "ok", "sure", "yep", "i'll take it", "count me in")
     * "decline_coverage"  — caregiver is declining a COVERAGE REQUEST sent to them (replying NO)
                             (e.g. "no", "nope", "nah", "pass", "can't cover", "no thanks")
+    * "check_in"          — caregiver announcing they ARRIVED at the client's home / starting the visit
+                            (e.g. "ARRIVED", "I'm here", "on site", "clocking in")
+    * "check_out"         — caregiver announcing they FINISHED the visit / leaving
+                            (e.g. "DONE", "all done", "finished up", "clocking out", "heading out")
     * "other"             — anything else
 - "reason": a short string describing the reason, or null
 - "shift_time": a time mentioned in the message (e.g. "9am", "2:30pm"), or null
@@ -151,9 +187,9 @@ def parse_message(text: str) -> dict:
         return fallback
 
     # Deterministic fast path — guarantees common phrasings always work and
-    # skips the API for unambiguous accept/decline replies.
+    # skips the API for unambiguous accept/decline/check-in/out replies.
     det = _deterministic_intent(text)
-    if det in ("confirm_coverage", "decline_coverage"):
+    if det in ("confirm_coverage", "decline_coverage", "check_in", "check_out"):
         return {"intent": det, "reason": None, "shift_time": None, "shift_date": None}
 
     try:
@@ -165,7 +201,8 @@ def parse_message(text: str) -> dict:
         raw = resp.content[0].text  # type: ignore[index]
         data = _extract_json(raw)
         intent = data.get("intent")
-        if intent not in ("cancel_shift", "confirm_coverage", "decline_coverage", "other"):
+        if intent not in ("cancel_shift", "confirm_coverage", "decline_coverage",
+                          "check_in", "check_out", "other"):
             intent = "other"
         # Safety net: if the model missed a clear intent, trust the
         # deterministic classifier instead of returning "other".

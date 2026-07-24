@@ -20,6 +20,8 @@ from coverage import (
     initiate_coverage_hunt,
     remove_candidate,
     send_confirmation_to_caregiver,
+    send_family_checkin_notification,
+    send_family_checkout_notification,
     send_family_notification,
     send_owner_summary,
 )
@@ -426,6 +428,12 @@ def admin_contacts():
     return render_template("admin/contacts.html", submissions=submissions)
 
 
+@app.route("/admin/ratings")
+@require_admin
+def admin_ratings():
+    return render_template("admin/ratings.html", ratings=db.get_all_ratings())
+
+
 @app.route("/admin/messages")
 @require_admin
 def admin_messages():
@@ -515,6 +523,10 @@ def handle_incoming(sender: str, body: str) -> None:
         _handle_confirm(caregiver, sender)
     elif intent == "decline_coverage":
         _handle_decline(caregiver, sender)
+    elif intent == "check_in":
+        _handle_check_in(caregiver)
+    elif intent == "check_out":
+        _handle_check_out(caregiver)
     else:
         log.info("No-op intent for %s: %r", caregiver["name"], body)
         # Send a helpful reply so caregivers know their message was received
@@ -665,6 +677,39 @@ def _handle_confirm(caregiver: dict, sender: str) -> None:
 def _handle_decline(caregiver: dict, sender: str) -> None:
     remove_candidate(sender)
     send_sms(caregiver["phone"], "Thanks for letting us know. We'll keep looking.")
+
+
+def _handle_check_in(caregiver: dict) -> None:
+    """Caregiver texted ARRIVED — mark shift active, notify the family."""
+    shift = db.find_checkin_shift(caregiver["id"], db.today())
+    if not shift:
+        send_sms(
+            caregiver["phone"],
+            f"Hi {caregiver['name'].split()[0]}! We couldn't find a shift for you today to check in to. "
+            f"Please call the office if this is a mistake.",
+        )
+        return
+    db.sms_check_in(shift["id"], caregiver["id"])
+    send_sms(caregiver["phone"], "Checked in — have a great visit! Text DONE when you finish.")
+    send_family_checkin_notification(shift["id"])
+    log.info("SMS check-in: %s on shift %s", caregiver["name"], shift["id"])
+
+
+def _handle_check_out(caregiver: dict) -> None:
+    """Caregiver texted DONE — mark shift completed, send family the rating link."""
+    with_active = db.get_shifts_by_caregiver_and_date(caregiver["id"], db.today())
+    shift = next((s for s in with_active if s["status"] == "active"), None)
+    if not shift:
+        send_sms(
+            caregiver["phone"],
+            f"Hi {caregiver['name'].split()[0]}! We don't show you checked in to a shift right now. "
+            f"Text ARRIVED first, or call the office if this is a mistake.",
+        )
+        return
+    db.sms_check_out(shift["id"], caregiver["id"])
+    send_sms(caregiver["phone"], "Checked out — great work today!")
+    send_family_checkout_notification(shift["id"])
+    log.info("SMS check-out: %s on shift %s", caregiver["name"], shift["id"])
 
 
 # ---------------------------------------------------------------------------
@@ -1036,13 +1081,33 @@ def family_portal(token: str):
         return render_template("client_portal.html", error="This link is not valid or has expired."), 404
     from coverage import _format_time
     data["agency_phone"] = os.getenv("OWNER_PHONE", "")
+    rating = db.get_rating_for_shift(data["shift_id"])
     return render_template(
         "client_portal.html",
         error=None,
         shift=data,
+        rating=rating,
+        rated=request.args.get("rated") == "1",
         start=_format_time(data["start_time"]),
         end=_format_time(data["end_time"]),
     )
+
+
+@app.route("/client/<token>/rate", methods=["POST"])
+def family_rate(token: str):
+    data = db.get_shift_by_token(token)
+    if not data:
+        return render_template("client_portal.html", error="This link is not valid or has expired."), 404
+    try:
+        stars = int(request.form.get("stars", ""))
+    except ValueError:
+        stars = 0
+    if not 1 <= stars <= 5:
+        return redirect(url_for("family_portal", token=token))
+    comment = (request.form.get("comment") or "").strip()[:1000] or None
+    db.record_rating(data["shift_id"], stars, comment)
+    log.info("Family rating saved: shift %s, %s stars", data["shift_id"], stars)
+    return redirect(url_for("family_portal", token=token, rated=1))
 
 
 # ---------------------------------------------------------------------------

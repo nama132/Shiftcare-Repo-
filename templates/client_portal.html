@@ -85,6 +85,60 @@
       color: #4a5568;
       line-height: 1.5;
     }
+    .rating-block h3 {
+      font-size: 1rem;
+      color: #2d3748;
+      margin-bottom: 12px;
+    }
+    .star-input {
+      display: inline-flex;
+      flex-direction: row-reverse;
+      gap: 4px;
+      margin-bottom: 14px;
+    }
+    .star-input input { display: none; }
+    .star-input label {
+      font-size: 2.1rem;
+      color: #cbd5e0;
+      cursor: pointer;
+      transition: color .15s ease, transform .15s ease;
+      line-height: 1;
+    }
+    .star-input label:hover,
+    .star-input label:hover ~ label,
+    .star-input input:checked ~ label {
+      color: #f6ad55;
+      transform: scale(1.08);
+    }
+    .rating-block textarea {
+      width: 100%;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font: inherit;
+      font-size: 0.9rem;
+      color: #2d3748;
+      resize: vertical;
+      margin-bottom: 12px;
+    }
+    .rating-block textarea:focus { outline: none; border-color: #4f46e5; }
+    .rating-submit {
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 22px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s ease;
+    }
+    .rating-submit:hover { background: #4338ca; }
+    .rating-done { text-align: center; padding: 8px 0; }
+    .rating-done p { color: #4a5568; font-size: 0.9rem; margin-top: 8px; }
+    .rating-done .rating-comment { color: #718096; font-style: italic; }
+    .rating-stars-static .star { font-size: 1.8rem; color: #cbd5e0; }
+    .rating-stars-static .star.filled { color: #f6ad55; }
     .error-card {
       text-align: center;
       padding: 48px 28px;
@@ -123,6 +177,14 @@
         <div class="status-banner status-covered">
           ✅ Caregiver confirmed for today's visit
         </div>
+      {% elif shift.status == 'active' %}
+        <div class="status-banner status-covered">
+          🟢 Caregiver is on site — visit in progress
+        </div>
+      {% elif shift.status == 'completed' %}
+        <div class="status-banner status-covered">
+          ✅ Visit complete
+        </div>
       {% elif shift.status == 'uncovered' %}
         <div class="status-banner status-uncovered">
           ⏳ We're finding a caregiver — check back soon
@@ -160,6 +222,34 @@
       <div class="note">
         <strong>Care notes:</strong> {{ shift.care_notes }}
       </div>
+      {% endif %}
+
+      {% if shift.status == 'completed' %}
+      <hr class="divider"/>
+      {% if rating %}
+      <div class="rating-done">
+        <div class="rating-stars-static">
+          {% for _ in range(rating.stars) %}<span class="star filled">★</span>{% endfor %}{% for _ in range(5 - rating.stars) %}<span class="star">★</span>{% endfor %}
+        </div>
+        <p>{% if rated %}Thank you — your rating has been saved!{% else %}You rated this visit.{% endif %}</p>
+        {% if rating.comment %}<p class="rating-comment">“{{ rating.comment }}”</p>{% endif %}
+      </div>
+      {% else %}
+      <div class="rating-block">
+        <h3>How was today's visit?</h3>
+        <form method="POST" action="{{ url_for('family_rate', token=request.view_args.token) }}">
+          <div class="star-input">
+            {% for i in [5,4,3,2,1] %}
+            <input type="radio" id="star{{ i }}" name="stars" value="{{ i }}" required/>
+            <label for="star{{ i }}" title="{{ i }} star{{ 's' if i > 1 }}">★</label>
+            {% endfor %}
+          </div>
+          <textarea name="comment" rows="3" maxlength="1000"
+                    placeholder="Anything you'd like to share about the visit? (optional)"></textarea>
+          <button type="submit" class="rating-submit">Submit Rating</button>
+        </form>
+      </div>
+      {% endif %}
       {% endif %}
 
     </div>

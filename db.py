@@ -1191,6 +1191,14 @@ def _ensure_employee_tables() -> None:
             comment     TEXT,
             created_at  TEXT NOT NULL
         )""",
+        f"""CREATE TABLE IF NOT EXISTS scheduling_suggestions (
+            id           {id_col},
+            shift_id     INTEGER NOT NULL,
+            caregiver_id INTEGER NOT NULL,
+            phone        TEXT NOT NULL,
+            status       TEXT NOT NULL DEFAULT 'pending',
+            created_at   TEXT NOT NULL
+        )""",
     ]
     with get_conn() as conn:
         cur = conn.cursor()
@@ -1519,6 +1527,103 @@ def get_all_ratings() -> list[dict]:
                LEFT JOIN caregivers cg ON cg.id = s.caregiver_id
                JOIN clients cl      ON cl.id = s.client_id
                ORDER BY r.created_at DESC""",
+        ).fetchall()
+    return _rows_to_dicts(rows)
+
+
+# ----------------------------------------------------------------------------
+# Proactive scheduler — find & offer unassigned future shifts
+# ----------------------------------------------------------------------------
+
+def get_unassigned_shifts(start_date: str, end_date: str) -> list[dict]:
+    """Future shifts with no caregiver assigned in [start_date, end_date]."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            """SELECT * FROM shifts
+               WHERE caregiver_id IS NULL
+                 AND date >= ? AND date <= ?
+                 AND status IN ('scheduled', 'uncovered')
+               ORDER BY date, start_time""",
+            (start_date, end_date),
+        ).fetchall()
+    return _rows_to_dicts(rows)
+
+
+def add_scheduling_suggestion(shift_id: int, caregiver_id: int, phone: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            """INSERT INTO scheduling_suggestions
+                   (shift_id, caregiver_id, phone, status, created_at)
+               VALUES (?, ?, ?, 'pending', ?)""",
+            (shift_id, caregiver_id, normalize_phone(phone), datetime.utcnow().isoformat()),
+        )
+        conn.commit()
+
+
+def get_pending_suggestion_for_phone(phone: str) -> dict | None:
+    """The most recent still-open scheduling offer for this phone, if the
+    shift is still unassigned."""
+    norm = normalize_phone(phone)
+    with get_conn() as conn:
+        row = conn.execute(
+            """SELECT ss.* FROM scheduling_suggestions ss
+               JOIN shifts s ON s.id = ss.shift_id
+               WHERE ss.phone = ?
+                 AND ss.status = 'pending'
+                 AND s.caregiver_id IS NULL
+               ORDER BY ss.created_at DESC
+               LIMIT 1""",
+            (norm,),
+        ).fetchone()
+    return _row_to_dict(row)
+
+
+def mark_suggestion_status(shift_id: int, caregiver_id: int, status: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            """UPDATE scheduling_suggestions SET status = ?
+               WHERE shift_id = ? AND caregiver_id = ? AND status = 'pending'""",
+            (status, shift_id, caregiver_id),
+        )
+        conn.commit()
+
+
+def expire_suggestions_for_shift(shift_id: int) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            """UPDATE scheduling_suggestions SET status = 'expired'
+               WHERE shift_id = ? AND status = 'pending'""",
+            (shift_id,),
+        )
+        conn.commit()
+
+
+def assign_shift_caregiver(shift_id: int, caregiver_id: int) -> bool:
+    """Assign a caregiver to an UNASSIGNED shift. Returns True if it won the
+    assignment (race-safe: only succeeds while caregiver_id IS NULL)."""
+    with get_conn() as conn:
+        cur = conn.execute(
+            """UPDATE shifts SET caregiver_id = ?, status = 'scheduled'
+               WHERE id = ? AND caregiver_id IS NULL""",
+            (caregiver_id, shift_id),
+        )
+        won = cur.rowcount == 1
+        conn.commit()
+    return won
+
+
+def get_all_suggestions() -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            """SELECT ss.id, ss.shift_id, ss.status,
+                      ss.created_at AS suggested_at, ss.phone,
+                      s.date, s.start_time, s.end_time,
+                      cg.name AS caregiver_name, cl.name AS client_name
+               FROM scheduling_suggestions ss
+               JOIN shifts s        ON s.id  = ss.shift_id
+               LEFT JOIN caregivers cg ON cg.id = ss.caregiver_id
+               JOIN clients cl      ON cl.id = s.client_id
+               ORDER BY ss.created_at DESC""",
         ).fetchall()
     return _rows_to_dicts(rows)
 

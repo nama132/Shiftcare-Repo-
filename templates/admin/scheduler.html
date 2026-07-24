@@ -38,7 +38,7 @@
         <td>
           {% if s.status == 'accepted' %}<span class="badge badge-green">accepted</span>
           {% elif s.status == 'declined' %}<span class="badge badge-red">declined</span>
-          {% elif s.status == 'offered' %}<span class="badge badge-yellow">offered</span>
+          {% elif s.status == 'pending' %}<span class="badge badge-yellow">offered</span>
           {% else %}<span class="badge badge-gray">{{ s.status }}</span>
           {% endif %}
         </td>

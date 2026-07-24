@@ -134,6 +134,10 @@
        class="{{ 'active' if request.endpoint == 'admin_ratings' }}">
       ⭐ Ratings
     </a>
+    <a href="{{ url_for('admin_scheduler') }}"
+       class="{{ 'active' if request.endpoint == 'admin_scheduler' }}">
+      🤖 Scheduler
+    </a>
     <a href="{{ url_for('dashboard') }}">📊 Live Dashboard</a>
   </nav>
   <div class="logout"><a href="{{ url_for('admin_logout') }}">⬅ Logout</a></div>

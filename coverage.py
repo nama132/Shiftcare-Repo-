@@ -114,6 +114,105 @@ def _alert_owner_no_coverage(shift: dict, client: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Proactive scheduler — fill unassigned FUTURE shifts before they become a
+# crisis. Scans a date window, ranks candidates for each open shift, and texts
+# the single best match an offer they can accept (YES) or decline (NO).
+# ---------------------------------------------------------------------------
+
+def _scheduling_offer_body(client: dict, shift: dict) -> str:
+    return (
+        f"ShiftCare scheduling: can you take a shift on {shift['date']}, "
+        f"{_format_time(shift['start_time'])}-{_format_time(shift['end_time'])} "
+        f"for {client['name']}? Text YES to accept or NO to pass."
+    )
+
+
+def run_proactive_scheduler(days_ahead: int = 7) -> dict:
+    """Scan the next `days_ahead` days for unassigned shifts and offer each to
+    its best-matched available caregiver.
+
+    Returns a summary dict: {shifts_scanned, offers_sent}.
+    """
+    from datetime import timedelta
+
+    start = db.today()
+    end = (datetime.strptime(start, "%Y-%m-%d") + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+    open_shifts = db.get_unassigned_shifts(start, end)
+
+    offers_sent = 0
+    no_candidates = 0
+    for shift in open_shifts:
+        client = db.get_client_by_id(shift["client_id"])
+        if not client:
+            continue
+        candidates = find_available_caregivers(
+            date=shift["date"],
+            start_time=shift["start_time"],
+            end_time=shift["end_time"],
+            preferred_zip=client.get("zip_code"),
+            required_certifications=client.get("required_certifications"),
+            client_id=client.get("id"),
+        )
+        if not candidates:
+            no_candidates += 1
+            log.info("Proactive scheduler: no candidate for shift %s", shift["id"])
+            continue
+        best = candidates[0]  # already sorted best-first by score
+        db.add_scheduling_suggestion(shift["id"], best["id"], best["phone"])
+        send_sms(best["phone"], _scheduling_offer_body(client, shift))
+        offers_sent += 1
+        log.info(
+            "Proactive scheduler: offered shift %s to %s (%s)",
+            shift["id"], best["name"], best["phone"],
+        )
+
+    return {
+        "shifts_scanned": len(open_shifts),
+        "offers_sent": offers_sent,
+        "no_candidates": no_candidates,
+    }
+
+
+def accept_scheduling_offer(caregiver: dict, suggestion: dict) -> bool:
+    """A caregiver accepted a proactive scheduling offer. Assign the shift
+    (race-safe) and notify. Returns True if the assignment succeeded."""
+    shift_id = suggestion["shift_id"]
+    if db.assign_shift_caregiver(shift_id, caregiver["id"]):
+        db.mark_suggestion_status(shift_id, caregiver["id"], "accepted")
+        db.expire_suggestions_for_shift(shift_id)
+        send_confirmation_to_caregiver(caregiver, shift_id)
+        _alert_owner_scheduled(shift_id, caregiver)
+        return True
+    # Someone/something already took it.
+    db.mark_suggestion_status(shift_id, caregiver["id"], "expired")
+    send_sms(caregiver["phone"], "Thanks! That shift has already been filled.")
+    return False
+
+
+def decline_scheduling_offer(caregiver: dict, suggestion: dict) -> None:
+    db.mark_suggestion_status(suggestion["shift_id"], caregiver["id"], "declined")
+    send_sms(caregiver["phone"], "No problem — thanks for letting us know.")
+
+
+def _alert_owner_scheduled(shift_id: int, caregiver: dict) -> None:
+    owner = os.getenv("OWNER_PHONE")
+    if not owner:
+        return
+    shift = db.get_shift_by_id(shift_id)
+    if not shift:
+        return
+    client = db.get_client_by_id(shift["client_id"])
+    if not client:
+        return
+    send_sms(
+        owner,
+        f"✅ ShiftCare: {caregiver['name']} accepted the open shift for "
+        f"{client['name']} on {shift['date']} "
+        f"({_format_time(shift['start_time'])}–{_format_time(shift['end_time'])}).",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Claim / decline
 # ---------------------------------------------------------------------------
 

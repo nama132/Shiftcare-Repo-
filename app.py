@@ -16,9 +16,12 @@ import re
 import db
 from ai_parser import parse_message, parse_message_with_context
 from coverage import (
+    accept_scheduling_offer,
     claim_shift,
+    decline_scheduling_offer,
     initiate_coverage_hunt,
     remove_candidate,
+    run_proactive_scheduler,
     send_confirmation_to_caregiver,
     send_family_checkin_notification,
     send_family_checkout_notification,
@@ -434,6 +437,24 @@ def admin_ratings():
     return render_template("admin/ratings.html", ratings=db.get_all_ratings())
 
 
+@app.route("/admin/scheduler", methods=["GET", "POST"])
+@require_admin
+def admin_scheduler():
+    summary = None
+    if request.method == "POST":
+        summary = run_proactive_scheduler()
+        flash(
+            f"Scheduler ran: scanned {summary['shifts_scanned']} open shifts, "
+            f"sent {summary['offers_sent']} offers.",
+            "success",
+        )
+    return render_template(
+        "admin/scheduler.html",
+        summary=summary,
+        suggestions=db.get_all_suggestions(),
+    )
+
+
 @app.route("/admin/messages")
 @require_admin
 def admin_messages():
@@ -652,6 +673,12 @@ _ORIGINAL_CAREGIVER_NAMES: dict[int, str] = {}
 def _handle_confirm(caregiver: dict, sender: str) -> None:
     shift_id = db.get_pending_shift_for_phone(sender)
     if not shift_id:
+        # No open coverage request — maybe they're accepting a proactive
+        # scheduling offer instead.
+        suggestion = db.get_pending_suggestion_for_phone(sender)
+        if suggestion:
+            accept_scheduling_offer(caregiver, suggestion)
+            return
         send_sms(
             caregiver["phone"],
             f"Hi {caregiver['name'].split()[0]}! There's no open coverage request for you right now. "
@@ -675,6 +702,13 @@ def _handle_confirm(caregiver: dict, sender: str) -> None:
 
 
 def _handle_decline(caregiver: dict, sender: str) -> None:
+    # A decline may apply to a coverage request or a proactive scheduling offer.
+    shift_id = db.get_pending_shift_for_phone(sender)
+    if not shift_id:
+        suggestion = db.get_pending_suggestion_for_phone(sender)
+        if suggestion:
+            decline_scheduling_offer(caregiver, suggestion)
+            return
     remove_candidate(sender)
     send_sms(caregiver["phone"], "Thanks for letting us know. We'll keep looking.")
 

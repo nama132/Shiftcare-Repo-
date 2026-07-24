@@ -4,68 +4,107 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>ShiftCare Admin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}"/>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-           background: #f4f6f9; color: #1a1a2e; display: flex; min-height: 100vh; }
-    .sidebar { width: 220px; background: #1a1a2e; color: #fff;
-               display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; }
-    .sidebar .brand { font-size: 1.25rem; font-weight: 700;
-                      padding: 0 24px 24px; border-bottom: 1px solid #2d2d4e; }
-    .sidebar nav { flex: 1; padding-top: 16px; }
-    .sidebar nav a { display: block; padding: 12px 24px; color: #a0aec0;
-                     text-decoration: none; font-size: 0.9rem; transition: all .15s; }
-    .sidebar nav a:hover, .sidebar nav a.active { background: #2d2d4e; color: #fff; }
-    .sidebar .logout { padding: 16px 24px; border-top: 1px solid #2d2d4e; }
-    .sidebar .logout a { color: #fc8181; font-size: 0.85rem; text-decoration: none; }
-    .main { flex: 1; padding: 32px; overflow-y: auto; }
-    .page-header { display: flex; justify-content: space-between;
-                   align-items: center; margin-bottom: 24px; }
-    .page-header h1 { font-size: 1.5rem; font-weight: 700; }
-    .btn { display: inline-block; padding: 8px 16px; border-radius: 6px;
-           font-size: 0.875rem; font-weight: 500; cursor: pointer;
-           text-decoration: none; border: none; transition: opacity .15s; }
-    .btn:hover { opacity: .85; }
-    .btn-primary { background: #4f46e5; color: #fff; }
-    .btn-danger  { background: #e53e3e; color: #fff; }
-    .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
-    .card { background: #fff; border-radius: 10px;
-            box-shadow: 0 1px 4px rgba(0,0,0,.08); overflow: hidden; }
+    body { display: flex; min-height: 100vh; }
+    body::before { display: none; }  /* no landing glow behind admin */
+
+    .sidebar {
+      width: 232px; flex-shrink: 0;
+      background: var(--bg-2);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 26px 0;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .sidebar .brand {
+      font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em;
+      padding: 0 24px 22px; border-bottom: 1px solid var(--border);
+    }
+    .sidebar .brand .dot { color: var(--indigo-2); }
+    .sidebar nav { flex: 1; padding-top: 14px; overflow-y: auto; }
+    .sidebar nav a {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 24px; margin: 2px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--text-dim); font-size: 0.9rem; font-weight: 500;
+      transition: background .15s, color .15s, transform .15s;
+    }
+    .sidebar nav a:hover { background: var(--surface-2); color: var(--text); transform: translateX(2px); }
+    .sidebar nav a.active {
+      background: linear-gradient(90deg, rgba(99,102,241,0.18), rgba(124,58,237,0.10));
+      color: var(--indigo-2);
+      border: 1px solid rgba(99,102,241,0.25);
+    }
+    .sidebar .logout { padding: 16px 24px 0; border-top: 1px solid var(--border); }
+    .sidebar .logout a { color: #fca5a5; font-size: 0.85rem; transition: color .15s; }
+    .sidebar .logout a:hover { color: var(--red); }
+
+    .main { flex: 1; padding: 34px 38px; overflow-y: auto; position: relative; z-index: 1; }
+    .page-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 26px;
+    }
+    .page-header h1 { font-size: 1.45rem; font-weight: 800; letter-spacing: -0.02em; }
+
+    /* legacy admin class aliases mapped onto the design system */
+    .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+    .card { overflow: hidden; }
     table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-    th { background: #f8fafc; padding: 12px 16px; text-align: left;
-         font-weight: 600; color: #4a5568; border-bottom: 1px solid #e2e8f0; }
-    td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; }
+    th {
+      padding: 13px 16px; text-align: left; font-weight: 600; font-size: 0.72rem;
+      color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border-2); background: var(--surface-2);
+    }
+    td { padding: 13px 16px; border-bottom: 1px solid var(--border); }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #f8fafc; }
-    .form-card { background: #fff; border-radius: 10px;
-                 box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 28px; max-width: 560px; }
+    tbody tr { transition: background .15s; }
+    tbody tr:hover td { background: var(--surface-2); }
+
+    .form-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 30px; max-width: 580px;
+    }
     .form-group { margin-bottom: 18px; }
-    label { display: block; font-size: 0.85rem; font-weight: 600;
-            color: #4a5568; margin-bottom: 6px; }
-    input[type=text], input[type=date], input[type=time],
-    select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db;
-             border-radius: 6px; font-size: 0.9rem; }
-    input:focus, select:focus { outline: none; border-color: #4f46e5; }
+    label {
+      display: block; font-size: 0.8rem; font-weight: 600;
+      color: var(--text-dim); margin-bottom: 7px;
+    }
+    input[type=text], input[type=date], input[type=time], input[type=tel],
+    input[type=email], input[type=password], select, textarea {
+      width: 100%; padding: 10px 13px;
+      background: var(--surface-2); border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-family: var(--font); font-size: 0.9rem;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--indigo);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+    }
+    select option { background: var(--bg-2); color: var(--text); }
     .form-check { display: flex; align-items: center; gap: 10px; }
     .form-check input { width: auto; }
-    .flash { padding: 12px 16px; border-radius: 6px; margin-bottom: 20px;
-             font-size: 0.875rem; font-weight: 500; }
-    .flash.success { background: #c6f6d5; color: #22543d; }
-    .flash.error   { background: #fed7d7; color: #742a2a; }
+
     .date-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-    .date-nav a { color: #4f46e5; text-decoration: none; font-size: 0.9rem; }
+    .date-nav a { color: var(--indigo-2); font-size: 0.9rem; transition: color .15s; }
+    .date-nav a:hover { color: var(--text); }
     .date-nav strong { font-size: 1rem; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px;
-             font-size: 0.75rem; font-weight: 600; }
-    .badge-green  { background: #c6f6d5; color: #22543d; }
-    .badge-red    { background: #fed7d7; color: #742a2a; }
-    .badge-yellow { background: #fefcbf; color: #744210; }
-    .badge-gray   { background: #e2e8f0; color: #4a5568; }
+
+    @media (max-width: 860px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; padding: 12px; overflow-x: auto; }
+      .sidebar .brand { border: none; padding: 0 16px; white-space: nowrap; }
+      .sidebar nav { display: flex; padding: 0; }
+      .sidebar nav a { white-space: nowrap; margin: 0 2px; padding: 8px 12px; }
+      .sidebar .logout { border: none; padding: 0 12px; }
+      .main { padding: 20px; }
+    }
   </style>
 </head>
 <body>
 <aside class="sidebar">
-  <div class="brand">🏥 ShiftCare</div>
+  <div class="brand">🏥 ShiftCare<span class="dot">.</span></div>
   <nav>
     <a href="{{ url_for('admin_caregivers') }}"
        class="{{ 'active' if request.endpoint and 'caregiver' in request.endpoint }}">
@@ -107,5 +146,6 @@
   {% endwith %}
   {% block content %}{% endblock %}
 </main>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

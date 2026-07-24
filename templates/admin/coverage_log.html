@@ -4,7 +4,7 @@
   <h1>📋 Coverage Log</h1>
   <form method="GET" style="display:flex;gap:8px;align-items:center">
     <input type="date" name="date" value="{{ selected }}"
-           style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px"/>
+           style="padding:6px 10px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:8px;color:var(--text);padding:8px 12px"/>
     <button type="submit" class="btn btn-primary">Filter</button>
     {% if selected %}
       <a href="{{ url_for('admin_coverage_log') }}" class="btn btn-primary">Clear</a>
@@ -35,7 +35,7 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="6" style="text-align:center;color:#718096">No coverage events found.</td></tr>
+      <tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No coverage events found.</td></tr>
       {% endfor %}
     </tbody>
   </table>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}ShiftCare{% endblock %}</title>
+  {% block meta %}{% endblock %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}"/>
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+{% block nav %}
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="{{ url_for('landing') }}" class="brand">🏥 ShiftCare<span class="dot">.</span></a>
+    <div class="nav-links">
+      <a class="link" href="{{ url_for('landing') }}#how">How it works</a>
+      <a class="link" href="{{ url_for('about') }}">About</a>
+      <a class="link" href="{{ url_for('login') }}">Sign in</a>
+      <a class="btn btn-primary" href="{{ url_for('signup') }}">Get started</a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}{% endblock %}
+
+{% block footer %}
+<footer class="site-footer">
+  <div class="inner">
+    <div>© 2026 ShiftCare · Home care coverage, handled.</div>
+    <div class="links">
+      <a href="{{ url_for('about') }}">About</a>
+      <a href="{{ url_for('privacy_policy') }}">Privacy</a>
+      <a href="{{ url_for('terms_of_service') }}">Terms</a>
+      <a href="mailto:aman@shiftcarehq.com">Contact</a>
+    </div>
+  </div>
+</footer>
+{% endblock %}
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

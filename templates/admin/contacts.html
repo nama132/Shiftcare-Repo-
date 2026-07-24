@@ -20,12 +20,12 @@
       <tr>
         <td style="white-space:nowrap;">{{ s.created_at[:16].replace('T', ' ') }}</td>
         <td>{{ s.name }}</td>
-        <td><a href="mailto:{{ s.email }}" style="color:#4f46e5;">{{ s.email }}</a></td>
+        <td><a href="mailto:{{ s.email }}" style="color:var(--indigo-2);">{{ s.email }}</a></td>
         <td>{{ s.agency or '—' }}</td>
         <td style="max-width:360px;">{{ s.message }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="5" style="text-align:center;color:#718096">No inquiries yet.</td></tr>
+      <tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No inquiries yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>

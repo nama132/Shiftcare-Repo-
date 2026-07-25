@@ -1,10 +1,10 @@
 {% extends "public_base.html" %}
-{% block title %}ShiftCare — Create Account{% endblock %}
+{% block title %}Willow Grove Senior Care — Create Account{% endblock %}
 
 {% block nav %}
 <nav class="site-nav">
   <div class="nav-inner">
-    <a href="{{ url_for('landing') }}" class="brand">🏥 ShiftCare<span class="dot">.</span></a>
+    <a href="{{ url_for('landing') }}" class="brand">🌿 Willow Grove<span class="dot">.</span></a>
     <div class="nav-links">
       <a class="link" href="{{ url_for('landing') }}">← Back to site</a>
     </div>
@@ -16,7 +16,7 @@
 <div class="auth-wrap">
   <div class="auth-card anim-in" style="max-width:460px;">
     <h1>Create your agency</h1>
-    <p class="sub">Set up your ShiftCare account to get started.</p>
+    <p class="sub">Set up your Willow Grove account to get started.</p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for cat, msg in messages %}

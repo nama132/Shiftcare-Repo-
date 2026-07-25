@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ShiftCare — Caregivers text. Coverage handles itself.</title>
-  <meta name="description" content="ShiftCare automates home care shift coverage over SMS. When a caregiver cancels, ShiftCare finds backup, confirms coverage, and notifies the family — automatically."/>
+  <title>Willow Grove Senior Care — Compassionate In-Home Care in Northern Virginia</title>
+  <meta name="description" content="Willow Grove Senior Care provides licensed, compassionate in-home care across Northern Virginia — personal care, companion care, dementia support, and 24/7 live-in. Family-owned since 2009. Free in-home assessment."/>
   <style>
     /* ============================================================
        DESIGN TOKENS — Command Center (dark, tech-forward)
@@ -204,21 +204,20 @@
     @media (max-width: 560px) { .features { grid-template-columns: 1fr; } }
 
     /* ============================================================
-       PRICING
+       TESTIMONIALS
     ============================================================ */
-    .pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: stretch; }
-    .price-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 34px 28px; display: flex; flex-direction: column; transition: border-color .3s, transform .3s; }
-    .price-card:hover { transform: translateY(-4px); border-color: var(--border-2); }
-    .price-card.featured { border-color: var(--indigo); box-shadow: var(--glow); position: relative; }
-    .price-card.featured::before { content: "Most popular"; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--indigo), var(--violet)); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 5px 14px; border-radius: 100px; }
-    .price-card .tier { font-size: 1.05rem; font-weight: 700; }
-    .price-card .price { font-size: 2.4rem; font-weight: 850; margin: 14px 0 4px; }
-    .price-card .price span { font-size: 0.95rem; font-weight: 500; color: var(--text-dim); }
-    .price-card .desc { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 20px; }
-    .price-card ul { list-style: none; margin-bottom: 28px; flex: 1; }
-    .price-card li { padding: 7px 0; color: var(--text-dim); font-size: 0.92rem; display: flex; gap: 10px; }
-    .price-card li::before { content: "✓"; color: var(--green); font-weight: 700; }
-    @media (max-width: 880px) { .pricing { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; } }
+    .testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: stretch; }
+    .tcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px 28px; display: flex; flex-direction: column; transition: border-color .3s, transform .3s; }
+    .tcard:hover { transform: translateY(-4px); border-color: var(--border-2); }
+    .tcard .stars { color: var(--amber); font-size: 0.95rem; letter-spacing: 2px; margin-bottom: 16px; }
+    .tcard blockquote { color: var(--text); font-size: 1rem; line-height: 1.65; flex: 1; }
+    .tcard .who { display: flex; align-items: center; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .tcard .who .av { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 0.9rem; color: #fff; background: linear-gradient(135deg, var(--indigo), var(--violet)); flex-shrink: 0; }
+    .tcard .who .nm { font-size: 0.92rem; font-weight: 700; }
+    .tcard .who .rel { font-size: 0.8rem; color: var(--text-dim); }
+    .creds { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 48px; }
+    .cred { display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem; color: var(--text-dim); background: var(--surface); border: 1px solid var(--border); padding: 9px 16px; border-radius: 100px; }
+    @media (max-width: 880px) { .testimonials { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; } }
 
     /* ============================================================
        CONTACT
@@ -265,14 +264,14 @@
   <!-- ===================== NAV ===================== -->
   <nav id="nav">
     <div class="nav-inner">
-      <a href="/" class="brand">🏥 ShiftCare<span class="dot">.</span></a>
+      <a href="/" class="brand">� Willow Grove<span class="dot">.</span></a>
       <div class="nav-links">
-        <a href="#how" class="link">How it works</a>
-        <a href="#features" class="link">Features</a>
-        <a href="#pricing" class="link">Pricing</a>
+        <a href="#how" class="link">Our care</a>
+        <a href="#features" class="link">Services</a>
+        <a href="#pricing" class="link">Families</a>
         <a href="#contact" class="link">Contact</a>
-        <a href="/login" class="link">Sign in</a>
-        <a href="https://calendly.com/your-placeholder/shiftcare-demo" target="_blank" rel="noopener" class="btn btn-primary">Book a demo</a>
+        <a href="/login" class="link">Staff sign in</a>
+        <a href="#contact" class="btn btn-primary">Request a consultation</a>
       </div>
     </div>
   </nav>
@@ -280,19 +279,19 @@
   <!-- ===================== HERO ===================== -->
   <header class="hero">
     <div class="container">
-      <span class="eyebrow"><span class="pulse"></span> Live SMS coverage automation</span>
-      <h1>Your caregivers text.<br><span class="grad">Coverage handles itself.</span></h1>
-      <p class="sub">When a caregiver cancels, ShiftCare finds backup, confirms the shift, and notifies the family — automatically, over SMS. No app. No phone calls. No 6am scramble.</p>
+      <span class="eyebrow"><span class="pulse"></span> Now accepting new clients in Northern Virginia</span>
+      <h1>Care that feels like family.<br><span class="grad">Right at home.</span></h1>
+      <p class="sub">Willow Grove pairs your loved one with a licensed, background-checked caregiver and a care plan built around their day — not ours. Hourly visits to 24/7 live-in support, with a nurse overseeing every plan.</p>
       <div class="hero-cta">
-        <a href="https://calendly.com/your-placeholder/shiftcare-demo" target="_blank" rel="noopener" class="btn btn-primary btn-lg">Book a 15-min demo →</a>
-        <a href="#how" class="btn btn-ghost btn-lg">See how it works</a>
+        <a href="#contact" class="btn btn-primary btn-lg">Request a free assessment →</a>
+        <a href="#features" class="btn btn-ghost btn-lg">Explore our services</a>
       </div>
 
       <div class="hero-stage" aria-hidden="true">
-        <div class="bubble in  b1">"Cancel my shift tomorrow, I'm sick" <span class="meta">Maria · 6:02 AM</span></div>
-        <div class="bubble out b2">Got it — we'll find coverage. Feel better! <span class="meta">ShiftCare · 6:02 AM</span></div>
-        <div class="bubble in  b3">"YES I can cover the 9am" <span class="meta">Priya · 6:05 AM</span></div>
-        <div class="bubble out b4">✅ Covered. Family notified. <span class="meta">ShiftCare · 6:05 AM</span></div>
+        <div class="bubble out b1">Good morning! Dad's up, had breakfast, and we're heading out for his walk. <span class="meta">Denise, caregiver · 8:14 AM</span></div>
+        <div class="bubble in  b2">Thank you — that photo made my whole week 💙 <span class="meta">Karen, daughter · 8:31 AM</span></div>
+        <div class="bubble out b3">Blood pressure logged, 128/78. Refill picked up too. <span class="meta">Denise, caregiver · 2:05 PM</span></div>
+        <div class="bubble in  b4">Honestly, I finally stopped worrying all day. <span class="meta">Karen, daughter · 2:20 PM</span></div>
       </div>
     </div>
   </header>
@@ -300,10 +299,10 @@
   <!-- ===================== TRUST / STATS ===================== -->
   <div class="trustbar">
     <div class="container">
-      <div class="stat"><div class="num" data-count="4">0</div><div class="label">Min avg coverage time</div></div>
-      <div class="stat"><div class="num" data-count="0">0</div><div class="label">Phone calls you make</div></div>
-      <div class="stat"><div class="num" data-count="3">0</div><div class="label">Parties auto-notified</div></div>
-      <div class="stat"><div class="num" data-count="24">0</div><div class="label">Hours/week saved</div></div>
+      <div class="stat"><div class="num" data-count="17">0</div><div class="label">Years serving Northern Virginia</div></div>
+      <div class="stat"><div class="num" data-count="40">0</div><div class="label">Licensed caregivers on staff</div></div>
+      <div class="stat"><div class="num" data-count="24">0</div><div class="label">Hour on-call nurse line</div></div>
+      <div class="stat"><div class="num" data-count="98">0</div><div class="label">% Family satisfaction rating</div></div>
     </div>
   </div>
 
@@ -312,34 +311,34 @@
     <div class="story-track">
 
       <div class="story-step pain reveal">
-        <span class="time">6:02 AM</span>
-        <h3>It's 6am. <span class="hl">Maria just canceled.</span></h3>
-        <p>Your phone buzzes. A caregiver is sick and can't make her 9am shift with Mr. Hayes. The old way? You start calling caregivers one by one, hoping someone picks up.</p>
+        <span class="time">Where most families start</span>
+        <h3>"Dad shouldn't be <span class="hl">alone all day.</span>"</h3>
+        <p>The stove was left on again. He skipped his afternoon medication twice last week. You live forty minutes away and you're checking your phone every hour, hoping nothing has gone wrong.</p>
       </div>
 
       <div class="story-step pain reveal">
-        <span class="time">The old way</span>
-        <h3>Twelve calls. <span class="hl">Three voicemails. Still no coverage.</span></h3>
-        <p>Every minute counts. The family is expecting someone. You're stuck dialing through your roster while your other work piles up — and the clock keeps ticking.</p>
+        <span class="time">The false choice</span>
+        <h3>But a facility <span class="hl">isn't the answer either.</span></h3>
+        <p>He's lived in that house for thirty-one years. The garden, the neighbors, the chair by the window. Moving him would take away the very independence you're trying to protect.</p>
       </div>
 
       <div class="story-step good reveal">
-        <span class="time">The ShiftCare way</span>
-        <h3>One text in. <span class="hl">Coverage out.</span></h3>
-        <p>ShiftCare reads Maria's message, instantly reaches eligible backup caregivers, and the first to reply "YES" gets the shift. You did nothing.</p>
+        <span class="time">There's a third option</span>
+        <h3>Bring the care <span class="hl">to him.</span></h3>
+        <p>A Willow Grove registered nurse visits your home, builds a care plan around his actual routine, and matches him with a caregiver who fits — the same familiar face, week after week.</p>
         <div class="sms-thread" id="storyThread">
-          <div class="sms them"><span class="who">Maria</span>Cancel my shift tomorrow, feeling awful 🤒</div>
-          <div class="sms us"><span class="who">ShiftCare</span>Got it — we'll find coverage. Feel better!</div>
-          <div class="sms us"><span class="who">ShiftCare → Priya</span>Maria's 9am with Mr. Hayes is open. Can you cover? Reply YES/NO</div>
-          <div class="sms them"><span class="who">Priya</span>YES I've got it 👍</div>
-          <div class="sms us"><span class="who">ShiftCare → Family</span>✅ Coverage confirmed. Priya arrives 9am.</div>
+          <div class="sms us"><span class="who">Angela Reyes, RN — Care Manager</span>Assessment complete. Recommending 5 days/week, 9am–2pm to start.</div>
+          <div class="sms them"><span class="who">Karen, daughter</span>Will it be the same person each time? That matters to him.</div>
+          <div class="sms us"><span class="who">Angela Reyes, RN</span>Yes — Denise M., 9 years with us, dementia-certified. Backup caregiver already introduced.</div>
+          <div class="sms them"><span class="who">Karen, daughter</span>And I'll actually hear how his day went?</div>
+          <div class="sms us"><span class="who">Willow Grove</span>Every visit. Daily notes, medication log, and a 24/7 nurse line for anything urgent.</div>
         </div>
       </div>
 
       <div class="story-step good reveal">
-        <span class="time">6:05 AM</span>
-        <h3>The family knows. <span class="hl">You slept through it.</span></h3>
-        <p>Priya is on her way. Mr. Hayes' daughter got an automatic update. Your coverage log is complete. This happens every day — now it handles itself.</p>
+        <span class="time">Six months later</span>
+        <h3>Still home. <span class="hl">And doing better than before.</span></h3>
+        <p>Medications on schedule. Two pounds gained back. The garden's alive again. Karen calls now because she wants to talk to her father — not because she's checking whether he's okay.</p>
       </div>
 
     </div>
@@ -349,28 +348,28 @@
   <section class="block" id="how">
     <div class="container">
       <div class="section-head reveal">
-        <div class="kicker">How it works</div>
-        <h2>Three steps. Zero phone calls.</h2>
-        <p>ShiftCare works over plain SMS — your caregivers already know how to text.</p>
+        <div class="kicker">Our care process</div>
+        <h2>Getting started takes about a week.</h2>
+        <p>No long-term contracts, no enrollment fees, and nothing owed for the initial assessment.</p>
       </div>
       <div class="steps">
         <div class="step-card reveal">
-          <div class="step-icon">📩</div>
+          <div class="step-icon">📞</div>
           <div class="step-num">STEP 01</div>
-          <h4>Caregiver texts to cancel</h4>
-          <p>A caregiver sends a normal text message. ShiftCare's AI understands natural language — no codes or apps required.</p>
+          <h4>Free in-home assessment</h4>
+          <p>A registered nurse spends about 60 minutes in the home reviewing health history, medications, mobility, and safety. No cost, no obligation.</p>
         </div>
         <div class="step-card reveal">
-          <div class="step-icon">⚡</div>
+          <div class="step-icon">📋</div>
           <div class="step-num">STEP 02</div>
-          <h4>Coverage hunt fires instantly</h4>
-          <p>ShiftCare messages eligible backup caregivers in priority order. The first to reply "YES" automatically claims the shift.</p>
+          <h4>A care plan built for one person</h4>
+          <p>You'll receive a written plan with hours, daily routine, and care goals — then meet the caregiver we've matched before the first visit begins.</p>
         </div>
         <div class="step-card reveal">
-          <div class="step-icon">🔔</div>
+          <div class="step-icon">🌿</div>
           <div class="step-num">STEP 03</div>
-          <h4>Everyone's notified</h4>
-          <p>The covering caregiver, the client's family, and you all get automatic confirmations. The coverage log writes itself.</p>
+          <h4>Care begins, with real oversight</h4>
+          <p>Visit notes after every shift, supervisory nurse check-ins every 60 days, and a 24/7 on-call line staffed by our own team — never an answering service.</p>
         </div>
       </div>
     </div>
@@ -380,66 +379,70 @@
   <section class="block" id="features" style="background:var(--bg-2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
     <div class="container">
       <div class="section-head reveal">
-        <div class="kicker">Everything you need</div>
-        <h2>Built for how home care actually runs</h2>
-        <p>From the 6am callout to the monthly pay stub — ShiftCare covers the whole operation.</p>
+        <div class="kicker">Services we provide</div>
+        <h2>Support that adapts as needs change</h2>
+        <p>Start with a few hours a week. Scale up to around-the-clock care without ever changing agencies.</p>
       </div>
       <div class="features">
-        <div class="feature reveal"><div class="ic">🤖</div><h4>AI message understanding</h4><p>Recognizes cancellations, confirmations, and declines from plain-English texts — no rigid keywords.</p></div>
-        <div class="feature reveal"><div class="ic">🎯</div><h4>Automated coverage hunt</h4><p>Reaches backup caregivers in smart priority order until a shift is claimed.</p></div>
-        <div class="feature reveal"><div class="ic">👨‍👩‍👧</div><h4>Family notifications</h4><p>Client families get automatic arrival and coverage updates — so they stop calling the office.</p></div>
-        <div class="feature reveal"><div class="ic">📊</div><h4>Live agency dashboard</h4><p>Real-time shift status, coverage logs, and caregiver management in one clean view.</p></div>
-        <div class="feature reveal"><div class="ic">📱</div><h4>Caregiver portal</h4><p>Caregivers view their schedule, clock in/out, and access pay stubs from any phone.</p></div>
-        <div class="feature reveal"><div class="ic">🛡️</div><h4>Carrier compliant</h4><p>Fully 10DLC-registered with TCPA-compliant opt-in — your messages get delivered.</p></div>
+        <div class="feature reveal"><div class="ic">🛁</div><h4>Personal care &amp; hygiene</h4><p>Dignified, hands-on help with bathing, dressing, grooming, toileting, and safe transfers. All personal care is supervised by a registered nurse.</p></div>
+        <div class="feature reveal"><div class="ic">☕</div><h4>Companion care</h4><p>Conversation, meal preparation, light housekeeping, laundry, errands, and rides to appointments, church, or the barber.</p></div>
+        <div class="feature reveal"><div class="ic">🧠</div><h4>Alzheimer's &amp; dementia care</h4><p>Caregivers complete 16 hours of specialized memory-care training. Structured routines, redirection techniques, and wandering-risk planning.</p></div>
+        <div class="feature reveal"><div class="ic">💊</div><h4>Medication reminders</h4><p>Timed prompts, refill coordination with your pharmacy, and a written log so nothing gets missed or doubled up.</p></div>
+        <div class="feature reveal"><div class="ic">🏥</div><h4>Post-hospital recovery</h4><p>Transitional support after surgery or a hospital stay — discharge instructions followed, mobility encouraged, readmission risks watched closely.</p></div>
+        <div class="feature reveal"><div class="ic">🌙</div><h4>Respite &amp; 24/7 live-in</h4><p>Overnight awake care, weekend relief, and live-in arrangements so family caregivers can rest, travel, or simply catch their breath.</p></div>
       </div>
     </div>
   </section>
 
-  <!-- ===================== PRICING ===================== -->
+  <!-- ===================== FAMILIES / TESTIMONIALS ===================== -->
   <section class="block" id="pricing">
     <div class="container">
       <div class="section-head reveal">
-        <div class="kicker">Pricing</div>
-        <h2>Simple plans that pay for themselves</h2>
-        <p>One uncovered shift costs more than a month of ShiftCare.</p>
+        <div class="kicker">Families we serve</div>
+        <h2>In their words</h2>
+        <p>Reviews collected from families receiving care in Alexandria, Arlington, Fairfax, and Falls Church.</p>
       </div>
-      <div class="pricing">
-        <div class="price-card reveal">
-          <div class="tier">Starter</div>
-          <div class="price">$99<span>/mo</span></div>
-          <div class="desc">For small agencies getting started.</div>
-          <ul>
-            <li>Up to 10 caregivers</li>
-            <li>Automated coverage hunt</li>
-            <li>Family notifications</li>
-            <li>Email support</li>
-          </ul>
-          <a href="#contact" class="btn btn-ghost btn-lg" style="justify-content:center;">Get started</a>
+      <div class="testimonials">
+        <div class="tcard reveal">
+          <div class="stars">★★★★★</div>
+          <blockquote>"We tried two other agencies before Willow Grove and kept getting a different person every week. Denise has been with my father for eleven months now. He calls her his friend — that tells you everything."</blockquote>
+          <div class="who">
+            <div class="av">KM</div>
+            <div>
+              <div class="nm">Karen M.</div>
+              <div class="rel">Daughter · Alexandria, VA</div>
+            </div>
+          </div>
         </div>
-        <div class="price-card featured reveal">
-          <div class="tier">Growth</div>
-          <div class="price">$199<span>/mo</span></div>
-          <div class="desc">For growing agencies that need scale.</div>
-          <ul>
-            <li>Up to 30 caregivers</li>
-            <li>Everything in Starter</li>
-            <li>Caregiver portal & pay stubs</li>
-            <li>Priority support</li>
-          </ul>
-          <a href="https://calendly.com/your-placeholder/shiftcare-demo" target="_blank" rel="noopener" class="btn btn-primary btn-lg" style="justify-content:center;">Book a demo</a>
+        <div class="tcard reveal">
+          <div class="stars">★★★★★</div>
+          <blockquote>"My mother has moderate dementia and I was terrified of afternoons. Their caregiver knew exactly how to redirect her without a fight. The nurse actually calls me back the same day, every time."</blockquote>
+          <div class="who">
+            <div class="av">DR</div>
+            <div>
+              <div class="nm">David R.</div>
+              <div class="rel">Son · Falls Church, VA</div>
+            </div>
+          </div>
         </div>
-        <div class="price-card reveal">
-          <div class="tier">Scale</div>
-          <div class="price">Custom</div>
-          <div class="desc">For multi-location operations.</div>
-          <ul>
-            <li>Unlimited caregivers</li>
-            <li>Everything in Growth</li>
-            <li>Dedicated onboarding</li>
-            <li>Custom integrations</li>
-          </ul>
-          <a href="#contact" class="btn btn-ghost btn-lg" style="justify-content:center;">Talk to us</a>
+        <div class="tcard reveal">
+          <div class="stars">★★★★★</div>
+          <blockquote>"After my husband's hip replacement we needed help fast. Willow Grove had a nurse in our living room the next morning and care started that Thursday. Eight weeks later he's walking the block again."</blockquote>
+          <div class="who">
+            <div class="av">PL</div>
+            <div>
+              <div class="nm">Patricia L.</div>
+              <div class="rel">Spouse · Arlington, VA</div>
+            </div>
+          </div>
         </div>
+      </div>
+      <div class="creds reveal">
+        <span class="cred">🛡️ Licensed by the Virginia Department of Health</span>
+        <span class="cred">📄 Bonded &amp; fully insured</span>
+        <span class="cred">🔎 FBI &amp; state background checks on every caregiver</span>
+        <span class="cred">🎖️ VA Aid &amp; Attendance accepted</span>
+        <span class="cred">💳 Long-term care insurance billing</span>
       </div>
     </div>
   </section>
@@ -449,14 +452,13 @@
     <div class="container">
       <div class="contact-wrap">
         <div class="contact-info reveal">
-          <h3>Questions? Let's talk.</h3>
-          <p>Send us a message and we'll get back to you — or skip ahead and book a live demo on the calendar.</p>
-          <div class="ci-item"><div class="ic">📍</div><span>4605 Latrobe Pl, Alexandria, VA 22311</span></div>
-          <div class="ci-item"><div class="ic">📞</div><a href="tel:+17035774626">(703) 577-4626</a></div>
-          <div class="ci-item"><div class="ic">✉️</div><a href="mailto:aman@shiftcarehq.com">aman@shiftcarehq.com</a></div>
-          <div style="margin-top:28px;">
-            <a href="https://calendly.com/your-placeholder/shiftcare-demo" target="_blank" rel="noopener" class="btn btn-primary btn-lg">📅 Schedule a demo</a>
-          </div>
+          <h3>Let's talk about your family's needs.</h3>
+          <p>Tell us a little about the situation and a care manager will reach out within one business day. If it's urgent, please call — someone answers 24 hours a day.</p>
+          <div class="ci-item"><div class="ic">📍</div><span>2410 Duke Street, Suite 210, Alexandria, VA 22314</span></div>
+          <div class="ci-item"><div class="ic">📞</div><a href="tel:+17035550142">(703) 555-0142</a></div>
+          <div class="ci-item"><div class="ic">✉️</div><a href="mailto:care@willowgrovecare.com">care@willowgrovecare.com</a></div>
+          <div class="ci-item"><div class="ic">🕐</div><span>Office: Mon–Fri, 8:00 AM – 6:00 PM · On-call nurse line: 24/7</span></div>
+          <div class="ci-item"><div class="ic">🗺️</div><span>Serving Alexandria, Arlington, Fairfax, Falls Church, Springfield &amp; McLean</span></div>
         </div>
         <div class="form-card reveal">
           {% with messages = get_flashed_messages(with_categories=true) %}
@@ -466,22 +468,22 @@
           {% endwith %}
           <form method="POST" action="/contact">
             <div class="form-row">
-              <label for="name">Name</label>
-              <input type="text" id="name" name="name" required placeholder="Jane Doe"/>
+              <label for="name">Your name</label>
+              <input type="text" id="name" name="name" required placeholder="Karen Mitchell"/>
             </div>
             <div class="form-row">
               <label for="email">Email</label>
-              <input type="email" id="email" name="email" required placeholder="jane@youragency.com"/>
+              <input type="email" id="email" name="email" required placeholder="karen.mitchell@email.com"/>
             </div>
             <div class="form-row">
-              <label for="agency">Agency name</label>
-              <input type="text" id="agency" name="agency" placeholder="Sunrise Home Care"/>
+              <label for="agency">Who needs care?</label>
+              <input type="text" id="agency" name="agency" placeholder="My father, 82 — Alexandria"/>
             </div>
             <div class="form-row">
-              <label for="message">How can we help?</label>
-              <textarea id="message" name="message" required placeholder="Tell us about your agency and what you're looking for..."></textarea>
+              <label for="message">Tell us about the situation</label>
+              <textarea id="message" name="message" required placeholder="What kind of help are you looking for, and how many hours a week do you think you'd need?"></textarea>
             </div>
-            <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;">Send message</button>
+            <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;">Request a free assessment</button>
           </form>
         </div>
       </div>
@@ -491,26 +493,26 @@
   <!-- ===================== FINAL CTA ===================== -->
   <div class="final-cta">
     <div class="inner reveal">
-      <h2>Caregiver calls out. Coverage found. You did nothing.</h2>
-      <p>See ShiftCare handle a live cancellation in under 5 minutes.</p>
-      <a href="https://calendly.com/your-placeholder/shiftcare-demo" target="_blank" rel="noopener" class="btn btn-primary btn-lg">Book your demo →</a>
+      <h2>Every family deserves peace of mind.</h2>
+      <p>The in-home assessment is free, there's no contract, and you'll know your options within a week.</p>
+      <a href="#contact" class="btn btn-primary btn-lg">Request a free assessment →</a>
     </div>
   </div>
 
   <!-- ===================== FOOTER ===================== -->
   <footer>
     <div class="footer-inner">
-      <a href="/" class="brand">🏥 ShiftCare<span class="dot">.</span></a>
+      <a href="/" class="brand">� Willow Grove<span class="dot">.</span></a>
       <div class="footer-links">
-        <a href="#how">How it works</a>
-        <a href="#features">Features</a>
-        <a href="#pricing">Pricing</a>
+        <a href="#how">Our care</a>
+        <a href="#features">Services</a>
+        <a href="#pricing">Families</a>
         <a href="/about">About</a>
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
-        <a href="/login">Sign in</a>
+        <a href="/login">Staff sign in</a>
       </div>
-      <div class="footer-copy">© 2026 ShiftCare · Alexandria, VA</div>
+      <div class="footer-copy">© 2026 Willow Grove Senior Care · Alexandria, VA · Licensed, Bonded &amp; Insured · VA HCO #4102-1187</div>
     </div>
   </footer>
 

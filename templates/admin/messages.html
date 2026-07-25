@@ -15,15 +15,15 @@
                  color: var(--text); border-bottom: 1px solid var(--border); transition: background .15s; }
   .thread-item:last-child { border-bottom: none; }
   .thread-item:hover { background: var(--surface-2); }
-  .thread-item.active { background: rgba(99,102,241,0.12); border-left: 3px solid var(--indigo); }
+  .thread-item.active { background: rgba(22,163,74,0.10); border-left: 3px solid var(--indigo); }
   .thread-name { font-weight: 600; font-size: 0.9rem; display: flex;
                  justify-content: space-between; align-items: center; }
   .thread-preview { color: var(--text-dim2); font-size: 0.8rem; margin-top: 4px;
                     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .role-tag { font-size: 0.65rem; font-weight: 600; padding: 1px 7px;
               border-radius: 999px; text-transform: uppercase; letter-spacing: .03em; }
-  .role-caregiver { background: rgba(34,197,94,0.15); color: #4ade80; }
-  .role-family    { background: rgba(59,130,246,0.15); color: #93c5fd; }
+  .role-caregiver { background: rgba(22,163,74,0.12); color: #15803d; }
+  .role-family    { background: rgba(13,148,136,0.12); color: #0f766e; }
   .role-unknown   { background: var(--surface-2); color: var(--text-dim); }
   .conversation { flex: 1; }
   .conv-header { padding: 16px 20px; border-bottom: 1px solid var(--border);
@@ -37,7 +37,7 @@
                     border: 1px solid var(--border-2); border-bottom-left-radius: 4px; }
   .bubble.outbound { align-self: flex-end; background: linear-gradient(135deg, var(--indigo), var(--violet)); color: #fff;
                      border-bottom-right-radius: 4px; }
-  .bubble.outbound .meta { color: #c7d2fe; }
+  .bubble.outbound .meta { color: rgba(255,255,255,0.75); }
   .empty { padding: 40px; text-align: center; color: var(--text-dim2); }
   @media (max-width: 860px) { .msg-layout { flex-direction: column; } .thread-list { width: 100%; } }
 </style>
@@ -68,7 +68,7 @@
       <div class="conv-header">
         {{ selected_thread.party_name }}
         <span class="role-tag role-{{ selected_thread.party_role }}">{{ selected_thread.party_role }}</span>
-        <span style="color:#94a3b8;font-weight:400;font-size:0.8rem">· {{ selected_phone }}</span>
+        <span style="color:var(--text-dim2);font-weight:400;font-size:0.8rem">· {{ selected_phone }}</span>
       </div>
       <div class="conv-body">
         {% for m in messages %}

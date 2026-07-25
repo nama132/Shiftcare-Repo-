@@ -1,0 +1,145 @@
+{% extends "employee/base.html" %}
+{% block title %}My Profile{% endblock %}
+{% block page_title %}Profile{% endblock %}
+
+{% block content %}
+
+<!-- Avatar + name -->
+<div class="card">
+  <div class="card-body" style="display:flex;align-items:center;gap:16px;">
+    <div style="width:60px;height:60px;border-radius:50%;background:#DCFCE7;
+                display:flex;align-items:center;justify-content:center;
+                font-size:22px;font-weight:700;color:#15803D;flex-shrink:0;">
+      {{ caregiver.name.split()[0][0] }}{{ caregiver.name.split()[-1][0] if caregiver.name.split()|length > 1 else '' }}
+    </div>
+    <div>
+      <div style="font-size:18px;font-weight:700;color:#10241A;">{{ caregiver.name }}</div>
+      {% if caregiver.certifications %}
+      <div style="margin-top:4px;">
+        {% for cert in caregiver.certifications.split(',') %}
+          <span class="badge badge-blue" style="margin-right:4px;">{{ cert.strip() }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Contact info -->
+<div class="card">
+  <div class="card-header">📞 Contact</div>
+  <div class="card-body">
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F5FAF7;">
+      <span style="color:#4B6357;font-size:13px;">Phone</span>
+      <span style="font-weight:500;font-size:13px;">{{ caregiver.phone }}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0;">
+      <span style="color:#4B6357;font-size:13px;">ZIP Code</span>
+      <span style="font-weight:500;font-size:13px;">{{ caregiver.zip_code or '—' }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Pay rate -->
+<div class="card">
+  <div class="card-header">💰 Pay</div>
+  <div class="card-body">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="color:#4B6357;font-size:13px;">Hourly Rate</span>
+      <span style="font-size:18px;font-weight:700;color:#16A34A;">
+        ${{ "%.2f"|format(caregiver.pay_rate) }}/hr
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Availability -->
+<div class="card">
+  <div class="card-header">📅 My Availability</div>
+  <div class="card-body">
+    <p style="font-size:12px;color:#4B6357;margin-bottom:14px;">
+      Check the days you're available and set your hours. Your supervisor will see these changes immediately.
+    </p>
+    <form method="POST" action="{{ url_for('employee_update_availability') }}" id="avail-form">
+
+      {% set days = [('mon','Monday'),('tue','Tuesday'),('wed','Wednesday'),('thu','Thursday'),('fri','Friday'),('sat','Saturday'),('sun','Sunday')] %}
+      {% for day_key, day_label in days %}
+        {% set day_avail = avail.get(day_key, []) %}
+        {% set is_checked = day_avail|length > 0 %}
+        {% if is_checked and day_avail[0] and '-' in day_avail[0] %}
+          {% set parts = day_avail[0].split('-') %}
+          {% set cur_start = parts[0] %}
+          {% set cur_end = parts[1] %}
+        {% else %}
+          {% set cur_start = '8am' %}
+          {% set cur_end = '5pm' %}
+        {% endif %}
+
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F5FAF7;" id="row-{{ day_key }}">
+        <!-- Day checkbox -->
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;width:100px;flex-shrink:0;">
+          <input type="checkbox" name="day_{{ day_key }}" value="1"
+                 {{ 'checked' if is_checked }}
+                 onchange="toggleDay('{{ day_key }}')"
+                 style="width:18px;height:18px;accent-color:#16A34A;cursor:pointer;"/>
+          <span style="font-size:13px;font-weight:600;color:#10241A;">{{ day_label }}</span>
+        </label>
+
+        <!-- Time selectors (hidden if not checked) -->
+        <div id="times-{{ day_key }}" style="display:{% if is_checked %}flex{% else %}none{% endif %};align-items:center;gap:6px;flex:1;">
+          <select name="start_{{ day_key }}" style="flex:1;padding:6px 8px;border:1px solid #C7DDD0;border-radius:6px;font-size:12px;font-family:inherit;">
+            {% for t in ['6am','7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm'] %}
+              <option value="{{ t }}" {{ 'selected' if cur_start == t }}>{{ t }}</option>
+            {% endfor %}
+          </select>
+          <span style="font-size:12px;color:#4B6357;">to</span>
+          <select name="end_{{ day_key }}" style="flex:1;padding:6px 8px;border:1px solid #C7DDD0;border-radius:6px;font-size:12px;font-family:inherit;">
+            {% for t in ['11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm'] %}
+              <option value="{{ t }}" {{ 'selected' if cur_end == t }}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% if not is_checked %}
+        <span id="off-{{ day_key }}" style="font-size:12px;color:#7B9488;">Day off</span>
+        {% else %}
+        <span id="off-{{ day_key }}" style="font-size:12px;color:#7B9488;display:none;">Day off</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      <div style="margin-top:16px;">
+        <button type="submit" class="btn btn-blue">💾 Save Availability</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Security -->
+<div class="card">
+  <div class="card-header">🔐 Security</div>
+  <div class="card-body">
+    <a href="{{ url_for('employee_change_password') }}" class="btn btn-ghost">🔑 Change Password</a>
+  </div>
+</div>
+
+<!-- Log out -->
+<form method="POST" action="{{ url_for('employee_logout') }}" style="margin-top:8px;">
+  <button class="btn btn-red" type="submit">🚪 Log Out</button>
+</form>
+
+<script>
+function toggleDay(dayKey) {
+  const cb = document.querySelector('input[name="day_' + dayKey + '"]');
+  const times = document.getElementById('times-' + dayKey);
+  const off   = document.getElementById('off-' + dayKey);
+  if (cb.checked) {
+    times.style.display = 'flex';
+    off.style.display   = 'none';
+  } else {
+    times.style.display = 'none';
+    off.style.display   = 'inline';
+  }
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pay Stub — {{ caregiver.name if caregiver else 'Employee' }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #F5FAF7;
+      color: #10241A;
+      padding: 20px 16px 80px;
+    }
+
+    /* ── Header actions bar (hidden when printing) ──── */
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 680px;
+      margin: 0 auto 20px;
+    }
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: #16A34A; text-decoration: none; font-size: 14px; font-weight: 500;
+    }
+    .btn-print {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; background: #16A34A; color: #fff;
+      border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+    }
+    .btn-print:hover { background: #15803D; }
+
+    /* ── Stub card ──────────────────────────────────── */
+    .stub {
+      background: #fff;
+      border: 1px solid #DFEAE3;
+      border-radius: 12px;
+      max-width: 680px;
+      margin: 0 auto;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    /* Header band */
+    .stub-header {
+      background: linear-gradient(135deg, #15803D 0%, #0D9488 100%);
+      color: #fff;
+      padding: 24px 28px;
+    }
+    .stub-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .stub-logo { font-size: 18px; font-weight: 700; }
+    .stub-logo span { color: #86EFAC; }
+    .stub-title { font-size: 11px; color: rgba(255,255,255,0.78); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+    .stub-period { text-align: right; }
+    .stub-period-label { font-size: 11px; color: rgba(255,255,255,0.78); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stub-period-dates { font-size: 16px; font-weight: 600; margin-top: 2px; }
+
+    /* Employee info */
+    .stub-employee {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 28px;
+      border-bottom: 1px solid #DFEAE3;
+      background: #F5FAF7;
+    }
+    .emp-name { font-size: 18px; font-weight: 700; }
+    .emp-meta { font-size: 12px; color: #4B6357; margin-top: 3px; }
+    .emp-rate { text-align: right; }
+    .emp-rate-num { font-size: 18px; font-weight: 700; color: #16A34A; }
+    .emp-rate-lbl { font-size: 11px; color: #4B6357; margin-top: 2px; }
+
+    /* Shift table */
+    .stub-table-wrap { padding: 0 28px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    thead tr { background: #F2F8F4; }
+    th {
+      padding: 10px 12px;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: #4B6357; text-align: left;
+      border-bottom: 2px solid #DFEAE3;
+    }
+    td {
+      padding: 11px 12px;
+      font-size: 13px;
+      border-bottom: 1px solid #F5FAF7;
+      color: #10241A;
+    }
+    tr:last-child td { border-bottom: none; }
+    .td-right { text-align: right; }
+    .td-mono { font-variant-numeric: tabular-nums; }
+
+    /* No shifts message */
+    .no-shifts {
+      padding: 32px 28px;
+      text-align: center;
+      color: #7B9488;
+      font-size: 14px;
+    }
+
+    /* Totals row */
+    .totals-row {
+      margin: 0 28px;
+      padding: 16px 12px;
+      border-top: 2px solid #10241A;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .totals-left { font-size: 14px; font-weight: 600; color: #4B6357; }
+    .totals-hours { font-size: 16px; font-weight: 700; }
+    .totals-right { text-align: right; }
+    .totals-lbl { font-size: 11px; color: #4B6357; text-transform: uppercase; letter-spacing: 0.06em; }
+    .totals-amount { font-size: 28px; font-weight: 800; color: #16A34A; }
+
+    /* Status bar */
+    .stub-status {
+      margin: 20px 28px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .stub-status.finalized { background: #DCFCE7; color: #15803D; }
+    .stub-status.pending   { background: #FEF3C7; color: #92400E; }
+
+    /* Footer */
+    .stub-footer {
+      padding: 16px 28px;
+      border-top: 1px solid #DFEAE3;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #7B9488;
+      background: #F5FAF7;
+    }
+
+    /* ── Print styles ───────────────────────────────── */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .action-bar { display: none; }
+      .stub {
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        max-width: 100%;
+      }
+      @page {
+        size: letter;
+        margin: 0.75in;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Action bar (hidden when printing) -->
+<div class="action-bar">
+  <a href="{{ url_for('employee_pay') }}" class="btn-back">← Back to Pay</a>
+  <button class="btn-print" onclick="window.print()">🖨️ Print / Download PDF</button>
+</div>
+
+<!-- Pay stub card -->
+<div class="stub">
+
+  <!-- Header -->
+  <div class="stub-header">
+    <div class="stub-header-top">
+      <div>
+        <div class="stub-logo">🏥 <span>Willow Grove</span></div>
+        <div class="stub-title">{{ agency_name }}</div>
+      </div>
+      <div class="stub-period">
+        <div class="stub-period-label">Pay Period</div>
+        <div class="stub-period-dates">
+          {{ period.period_start }} – {{ period.period_end }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Employee info -->
+  <div class="stub-employee">
+    <div>
+      <div class="emp-name">{{ caregiver.name if caregiver else 'Employee' }}</div>
+      <div class="emp-meta">
+        {% if caregiver and caregiver.certifications %}
+          {{ caregiver.certifications.replace(',', ' · ') }} &nbsp;·&nbsp;
+        {% endif %}
+        {% if caregiver %}{{ caregiver.phone }}{% endif %}
+      </div>
+    </div>
+    <div class="emp-rate">
+      <div class="emp-rate-num">${{ "%.2f"|format(rate) }}/hr</div>
+      <div class="emp-rate-lbl">Pay Rate</div>
+    </div>
+  </div>
+
+  <!-- Shift breakdown table -->
+  {% if shift_rows %}
+  <div class="stub-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Client</th>
+          <th>Scheduled</th>
+          <th class="td-right">Hours</th>
+          <th class="td-right">Earned</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in shift_rows %}
+        <tr>
+          <td class="td-mono">{{ s.date }}</td>
+          <td>{{ s.client_name }}</td>
+          <td class="td-mono" style="color:#4B6357;">{{ s.start_time }}–{{ s.end_time }}</td>
+          <td class="td-right td-mono">{{ s.hours }}</td>
+          <td class="td-right td-mono" style="font-weight:600;">${{ "%.2f"|format(s.earned) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="no-shifts">No shifts found for this pay period.</div>
+  {% endif %}
+
+  <!-- Totals -->
+  <div class="totals-row">
+    <div>
+      <div class="totals-left">Total Hours Worked</div>
+      <div class="totals-hours">{{ total_hours }} hrs</div>
+    </div>
+    <div class="totals-right">
+      <div class="totals-lbl">Gross Pay</div>
+      <div class="totals-amount">${{ "%.2f"|format(total_earned) }}</div>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="stub-status {{ 'finalized' if period.locked else 'pending' }}" style="margin-bottom:0;">
+    {% if period.locked %}
+      ✅ This pay period has been finalized.
+    {% else %}
+      ⏳ This pay period is still in progress. Final amount may change.
+    {% endif %}
+  </div>
+
+  <!-- Footer -->
+  <div class="stub-footer">
+    <span>Generated {{ now().strftime('%B %-d, %Y') }} by Willow Grove</span>
+    <span>{{ caregiver.name if caregiver else '' }} · Period #{{ period.id }}</span>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,82 @@
+{% extends "employee/base.html" %}
+{% block title %}Pay & Hours{% endblock %}
+{% block page_title %}Pay & Hours{% endblock %}
+
+{% block content %}
+
+<!-- Big stats -->
+<div class="stat-row">
+  <div class="stat-card">
+    <div class="stat-num">{{ week.hours }}</div>
+    <div class="stat-lbl">Hours This Week</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">${{ "%.2f"|format(week.earnings) }}</div>
+    <div class="stat-lbl">Earned This Week</div>
+  </div>
+</div>
+<div class="stat-row">
+  <div class="stat-card">
+    <div class="stat-num">{{ month.hours }}</div>
+    <div class="stat-lbl">Hours This Month</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">${{ "%.2f"|format(month.earnings) }}</div>
+    <div class="stat-lbl">Earned This Month</div>
+  </div>
+</div>
+
+<!-- Year to date -->
+<div class="card">
+  <div class="card-header">📊 Year-to-Date ({{ ytd.year }})</div>
+  <div class="card-body" style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <div style="font-size:26px;font-weight:700;color:#10241A;">{{ ytd.hours }} <span style="font-size:14px;color:#4B6357;font-weight:400;">hrs</span></div>
+      <div style="font-size:12px;color:#4B6357;margin-top:2px;">Total hours worked in {{ ytd.year }}</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:26px;font-weight:700;color:#16A34A;">${{ "%.2f"|format(ytd.earnings) }}</div>
+      <div style="font-size:12px;color:#4B6357;margin-top:2px;">Gross pay ({{ ytd.year }})</div>
+    </div>
+  </div>
+</div>
+
+<!-- Pay rate -->
+<div style="font-size:12px;color:#7B9488;text-align:center;margin:-8px 0 16px;">
+  Pay rate: ${{ "%.2f"|format(rate) }}/hr · Contact your supervisor to update
+</div>
+
+<!-- Pay history -->
+{% if periods %}
+<div style="font-size:13px;font-weight:600;color:#10241A;margin-bottom:10px;">Pay History</div>
+<div class="card">
+  <div class="card-body" style="padding:0 16px;">
+    {% for p in periods %}
+    <a href="{{ url_for('employee_pay_stub', period_id=p.id) }}"
+       style="text-decoration:none;color:inherit;display:block;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #F5FAF7;cursor:pointer;">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#10241A;">
+          {{ p.period_start[5:] }} – {{ p.period_end[5:] }}
+        </div>
+        <div style="font-size:12px;color:#4B6357;margin-top:2px;">{{ p.hours }} hrs</div>
+      </div>
+      <div style="text-align:right;display:flex;align-items:center;gap:10px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#10241A;">${{ "%.2f"|format(p.earnings) }}</div>
+          {% if p.locked %}
+            <span class="badge badge-green" style="font-size:10px;">Finalized</span>
+          {% else %}
+            <span class="badge badge-yellow" style="font-size:10px;">Pending</span>
+          {% endif %}
+        </div>
+        <span style="font-size:18px;color:#16A34A;">↗</span>
+      </div>
+    </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

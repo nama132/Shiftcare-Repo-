@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>Verify Code — Willow Grove</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh; background: linear-gradient(135deg, #15803D 0%, #0D9488 100%);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px 16px;
+    }
+    .card {
+      background: #fff; border-radius: 20px;
+      padding: 36px 28px; width: 100%; max-width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .icon { text-align: center; font-size: 48px; margin-bottom: 12px; }
+    h1 { text-align: center; font-size: 22px; font-weight: 700; color: #10241A; margin-bottom: 6px; }
+    .sub { text-align: center; font-size: 13px; color: #4B6357; margin-bottom: 28px; line-height: 1.5; }
+    .error-banner {
+      background: #FEE2E2; border: 1px solid #FCA5A5;
+      border-radius: 8px; padding: 10px 14px;
+      margin-bottom: 16px; font-size: 13px; color: #991B1B;
+    }
+    /* Big digit boxes */
+    .otp-group { display: flex; gap: 10px; justify-content: center; margin-bottom: 24px; }
+    .otp-box {
+      width: 52px; height: 60px;
+      border: 2px solid #C7DDD0; border-radius: 10px;
+      font-size: 26px; font-weight: 700; text-align: center;
+      color: #10241A; caret-color: #16A34A;
+      transition: border-color 0.15s;
+    }
+    .otp-box:focus { outline: none; border-color: #16A34A; box-shadow: 0 0 0 3px rgba(22,163,74,0.15); }
+    /* Hidden real input */
+    #otp { display: none; }
+    .btn-submit {
+      width: 100%; padding: 14px; background: #16A34A; color: #fff;
+      border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: background 0.15s;
+    }
+    .btn-submit:hover { background: #15803D; }
+    .divider { height: 1px; background: #DFEAE3; margin: 20px 0; }
+    .resend-row { display: flex; justify-content: space-between; align-items: center; }
+    .link-btn {
+      background: none; border: none; color: #16A34A;
+      font-size: 13px; font-weight: 500; cursor: pointer; padding: 0;
+    }
+    .back-link { color: #4B6357; font-size: 13px; text-decoration: none; }
+    .back-link:hover { color: #4B6357; }
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <div class="icon">📱</div>
+  <h1>Check your phone</h1>
+  <p class="sub">We sent a 6-digit code to your phone.<br/>Enter it below to sign in.</p>
+
+  {% if error %}
+  <div class="error-banner">❌ {{ error }}</div>
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('employee_verify_otp') }}" id="otp-form">
+    <!-- Visual digit boxes -->
+    <div class="otp-group" id="boxes">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]"/>
+    </div>
+    <!-- Hidden combined field sent to server -->
+    <input type="hidden" name="otp" id="otp"/>
+    <button class="btn-submit" type="submit">Verify &amp; Sign In</button>
+  </form>
+
+  <div class="divider"></div>
+  <div class="resend-row">
+    <a href="{{ url_for('employee_login') }}" class="back-link">← Back</a>
+    <form method="POST" action="{{ url_for('employee_resend_otp') }}" style="display:inline;">
+      <button class="link-btn" type="submit">Resend code</button>
+    </form>
+  </div>
+
+</div>
+
+<script>
+  const boxes = document.querySelectorAll('.otp-box');
+  const hidden = document.getElementById('otp');
+  const form   = document.getElementById('otp-form');
+
+  boxes[0].focus();
+
+  boxes.forEach((box, i) => {
+    box.addEventListener('input', () => {
+      box.value = box.value.replace(/\D/g, '').slice(-1);
+      if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
+      syncHidden();
+      if (allFilled()) form.submit();
+    });
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !box.value && i > 0) {
+        boxes[i - 1].focus(); boxes[i - 1].value = '';
+        syncHidden();
+      }
+    });
+    box.addEventListener('paste', e => {
+      e.preventDefault();
+      const pasted = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+      pasted.split('').forEach((ch, j) => { if (boxes[j]) boxes[j].value = ch; });
+      syncHidden();
+      if (allFilled()) form.submit();
+    });
+  });
+
+  function syncHidden() {
+    hidden.value = Array.from(boxes).map(b => b.value).join('');
+  }
+  function allFilled() {
+    return Array.from(boxes).every(b => b.value.length === 1);
+  }
+
+  // Pre-fill submit
+  form.addEventListener('submit', () => { syncHidden(); });
+</script>
+</body>
+</html>

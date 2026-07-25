@@ -1669,7 +1669,14 @@ def get_week_stats(caregiver_id: int) -> dict:
     shifts = get_shifts_for_caregiver_range(caregiver_id, week_start, td.isoformat())
     rate = get_caregiver_pay_rate(caregiver_id)
     hours = sum(_calc_shift_hours(s) for s in shifts)
-    return {"hours": round(hours, 2), "earnings": round(hours * rate, 2), "shifts": len(shifts)}
+    return {
+        "hours": round(hours, 2),
+        "earnings": round(hours * rate, 2),
+        "shifts": len(shifts),
+        "shift_count": len(shifts),
+        "week_start": week_start,
+        "week_end": (_d.date.fromisoformat(week_start) + _d.timedelta(days=6)).isoformat(),
+    }
 
 
 def get_month_stats(caregiver_id: int) -> dict:

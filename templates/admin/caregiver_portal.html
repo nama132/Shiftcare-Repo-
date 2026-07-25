@@ -1,0 +1,71 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>🔐 Employee Portal — {{ caregiver.name }}</h1>
+  <a href="{{ url_for('admin_caregivers') }}" class="btn btn-ghost">← Back to Caregivers</a>
+</div>
+
+<div class="form-card" style="max-width:480px;">
+
+  {% if account %}
+  <div style="margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <span style="font-size:15px;font-weight:600;">Portal Status:</span>
+      {% if account.portal_enabled %}
+        <span class="badge badge-green">✅ Active</span>
+      {% else %}
+        <span class="badge badge-red">❌ Disabled</span>
+      {% endif %}
+    </div>
+    <div style="font-size:13px;color:#4B6357;">
+      {% if account.last_login %}Last login: {{ account.last_login[:16].replace('T',' ') }} UTC
+      {% else %}Never logged in{% endif %}
+    </div>
+  </div>
+
+  <hr style="border:none;border-top:1px solid #DFEAE3;margin:20px 0;"/>
+
+  <form method="POST" style="margin-bottom:16px;">
+    <input type="hidden" name="action" value="toggle"/>
+    <button type="submit" class="btn {{ 'btn-danger' if account.portal_enabled else 'btn-primary' }}">
+      {{ '🔒 Disable Portal Access' if account.portal_enabled else '🔓 Enable Portal Access' }}
+    </button>
+  </form>
+
+  <form method="POST">
+    <input type="hidden" name="action" value="reset_password"/>
+    <div class="form-group">
+      <label>Set New Password</label>
+      <input type="password" name="password" class="form-control" placeholder="Min 8 characters" required minlength="8"/>
+      <small style="color:#4B6357;font-size:12px;">Share this with {{ caregiver.name.split()[0] }} for portal login.</small>
+    </div>
+    <button type="submit" class="btn btn-ghost">🔑 Reset Password</button>
+  </form>
+
+  {% else %}
+  <p style="color:#4B6357;font-size:14px;margin-bottom:20px;">
+    {{ caregiver.name }} doesn't have employee portal access yet.<br/>
+    Set a password below to create their account.
+  </p>
+  <form method="POST">
+    <input type="hidden" name="action" value="create"/>
+    <div class="form-group">
+      <label>Portal Password <span style="color:#DC2626;">*</span></label>
+      <input type="password" name="password" class="form-control" placeholder="Min 8 characters" required minlength="8"/>
+      <small style="color:#4B6357;font-size:12px;">
+        {{ caregiver.name.split()[0] }} logs in with their phone number + this password + an SMS code.
+      </small>
+    </div>
+    <button type="submit" class="btn btn-primary">✅ Create Portal Account</button>
+  </form>
+  {% endif %}
+
+  <div style="margin-top:24px;padding-top:16px;border-top:1px solid #DFEAE3;">
+    <div style="font-size:13px;color:#4B6357;font-weight:600;margin-bottom:4px;">Employee login link:</div>
+    <code style="font-size:12px;background:#F5FAF7;padding:6px 10px;border-radius:6px;display:block;">
+      {{ request.host_url }}employee/login
+    </code>
+    <div style="font-size:12px;color:#7B9488;margin-top:6px;">Login: phone → password → SMS code (2FA)</div>
+  </div>
+</div>
+{% endblock %}

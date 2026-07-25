@@ -785,7 +785,7 @@ def dashboard():
         selected=selected,
         prev_date=prev_date,
         next_date=next_date,
-        agency_name=session.get("agency_name", "ShiftCare"),
+        agency_name=session.get("agency_name", "Willow Grove"),
         username=session.get("username", ""),
         total=total,
         covered=covered,
@@ -1034,7 +1034,7 @@ def employee_pay_stub(period_id: int):
     total_earned = round(sum(s["earned"] for s in shift_rows), 2)
     caregivers = db.get_all_caregivers()
     caregiver  = next((c for c in caregivers if c["id"] == cid), None)
-    agency_name = session.get("agency_name", "ShiftCare Agency")
+    agency_name = session.get("agency_name", "Willow Grove Home Care")
     return render_template(
         "employee/pay_stub.html",
         period=period,
@@ -1054,6 +1054,9 @@ def employee_profile():
     cid = session["employee_id"]
     caregivers = db.get_all_caregivers()
     caregiver  = next((c for c in caregivers if c["id"] == cid), None)
+    if caregiver is not None:
+        caregiver = dict(caregiver)
+        caregiver["pay_rate"] = db.get_caregiver_pay_rate(cid)
     avail = {}
     if caregiver and caregiver.get("availability_json"):
         try:

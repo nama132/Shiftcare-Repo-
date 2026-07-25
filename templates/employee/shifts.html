@@ -1,0 +1,68 @@
+{% extends "employee/base.html" %}
+{% block title %}My Shifts{% endblock %}
+{% block page_title %}Shifts{% endblock %}
+
+{% block content %}
+
+{% if upcoming %}
+<div style="font-size:13px;font-weight:600;color:#10241A;margin-bottom:10px;">Upcoming</div>
+<div class="card">
+  <div class="card-body" style="padding:0 16px;">
+    {% for s in upcoming %}
+    <a href="{{ url_for('employee_shift_detail', shift_id=s.id) }}"
+       style="text-decoration:none;color:inherit;display:block;">
+    <div class="shift-row" style="cursor:pointer;">
+      <div class="shift-dot shift-dot-blue"></div>
+      <div class="shift-info" style="flex:1;">
+        <div class="shift-time">
+          {{ s.date[5:] }} &nbsp;·&nbsp; {{ s.start_time }} – {{ s.end_time }}
+        </div>
+        <div class="shift-client">{{ s.client_name }}</div>
+        {% if s.client_address %}
+        <div style="font-size:11px;color:#7B9488;margin-top:2px;">📍 {{ s.client_address }}</div>
+        {% endif %}
+      </div>
+      <span class="badge badge-blue">{{ s.status|capitalize }} ›</span>
+    </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if past %}
+<div style="font-size:13px;font-weight:600;color:#10241A;margin:16px 0 10px;">This Month — Completed</div>
+<div class="card">
+  <div class="card-body" style="padding:0 16px;">
+    {% for s in past %}
+    <a href="{{ url_for('employee_shift_detail', shift_id=s.id) }}"
+       style="text-decoration:none;color:inherit;display:block;">
+    <div class="shift-row" style="cursor:pointer;">
+      <div class="shift-dot {% if s.status == 'covered' or s.status == 'active' %}shift-dot-green{% else %}shift-dot-gray{% endif %}"></div>
+      <div class="shift-info" style="flex:1;">
+        <div class="shift-time">{{ s.date[5:] }} &nbsp;·&nbsp; {{ s.start_time }} – {{ s.end_time }}</div>
+        <div class="shift-client">{{ s.client_name }}</div>
+        {% if s.hours %}
+        <div style="font-size:11px;color:#4B6357;margin-top:2px;">{{ s.hours }} hrs worked</div>
+        {% endif %}
+      </div>
+      {% if s.earned %}
+      <div class="shift-earnings">${{ "%.2f"|format(s.earned) }} ›</div>
+      {% endif %}
+    </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if not upcoming and not past %}
+<div class="card">
+  <div class="card-body" style="text-align:center;color:#7B9488;padding:40px 16px;">
+    <div style="font-size:32px;margin-bottom:10px;">📭</div>
+    No shifts found.
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

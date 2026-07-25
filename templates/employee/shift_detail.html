@@ -1,0 +1,113 @@
+{% extends "employee/base.html" %}
+{% block title %}Shift Detail — Willow Grove{% endblock %}
+{% block page_title %}Shift Detail{% endblock %}
+
+{% block content %}
+
+<!-- Client + date -->
+<div class="card">
+  <div class="card-body">
+    <div style="font-size:20px;font-weight:700;color:#10241A;margin-bottom:4px;">
+      {{ shift.client_name }}
+    </div>
+    <div style="font-size:13px;color:#4B6357;">
+      {{ shift.date }}
+    </div>
+    {% if shift.client_address %}
+    <div style="font-size:13px;color:#16A34A;margin-top:8px;">
+      <a href="https://maps.google.com/?q={{ shift.client_address | urlencode }}"
+         target="_blank"
+         style="color:#16A34A;text-decoration:none;display:flex;align-items:center;gap:4px;">
+        📍 {{ shift.client_address }} ↗
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Time & earnings -->
+<div class="card">
+  <div class="card-header">⏱ Times & Earnings</div>
+  <div class="card-body">
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F5FAF7;">
+      <span style="color:#4B6357;font-size:13px;">Scheduled</span>
+      <span style="font-weight:600;font-size:13px;">{{ shift.start_time }} – {{ shift.end_time }}</span>
+    </div>
+
+    {% if clock_in_evt %}
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F5FAF7;">
+      <span style="color:#4B6357;font-size:13px;">Clocked In</span>
+      <span style="font-weight:600;font-size:13px;color:#16A34A;">
+        {{ clock_in_evt.event_time[11:16] }} UTC
+      </span>
+    </div>
+    {% endif %}
+
+    {% if clock_out_evt %}
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F5FAF7;">
+      <span style="color:#4B6357;font-size:13px;">Clocked Out</span>
+      <span style="font-weight:600;font-size:13px;color:#DC2626;">
+        {{ clock_out_evt.event_time[11:16] }} UTC
+      </span>
+    </div>
+    {% endif %}
+
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F5FAF7;">
+      <span style="color:#4B6357;font-size:13px;">Hours Worked</span>
+      <span style="font-weight:600;font-size:13px;">{{ hours }} hrs</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F5FAF7;">
+      <span style="color:#4B6357;font-size:13px;">Pay Rate</span>
+      <span style="font-weight:600;font-size:13px;">${{ "%.2f"|format(rate) }}/hr</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:12px 0;">
+      <span style="font-size:14px;font-weight:600;">Earned</span>
+      <span style="font-size:18px;font-weight:700;color:#16A34A;">${{ "%.2f"|format(earned) }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Status -->
+<div class="card">
+  <div class="card-header">📋 Status</div>
+  <div class="card-body" style="display:flex;align-items:center;gap:10px;">
+    {% if shift.status == 'covered' or shift.status == 'active' %}
+      <span class="badge badge-green" style="font-size:13px;padding:6px 14px;">✅ Completed</span>
+    {% elif shift.status == 'scheduled' %}
+      <span class="badge badge-blue" style="font-size:13px;padding:6px 14px;">📅 Scheduled</span>
+    {% elif shift.status == 'uncovered' %}
+      <span class="badge badge-red" style="font-size:13px;padding:6px 14px;">🚨 Uncovered</span>
+    {% else %}
+      <span class="badge badge-yellow" style="font-size:13px;padding:6px 14px;">{{ shift.status|capitalize }}</span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Care notes -->
+{% if shift.care_notes %}
+<div class="card">
+  <div class="card-header">📝 Care Notes</div>
+  <div class="card-body" style="font-size:14px;color:#4B6357;line-height:1.6;">
+    {{ shift.care_notes }}
+  </div>
+</div>
+{% endif %}
+
+<!-- Emergency contact -->
+{% if shift.family_phone %}
+<div class="card">
+  <div class="card-header">🆘 Emergency / Family Contact</div>
+  <div class="card-body">
+    <a href="tel:{{ shift.family_phone }}"
+       style="display:flex;align-items:center;gap:8px;color:#16A34A;text-decoration:none;font-weight:600;font-size:15px;">
+      📞 {{ shift.family_phone }}
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<div style="margin-top:8px;">
+  <a href="{{ url_for('employee_shifts') }}" class="btn btn-ghost">← Back to Shifts</a>
+</div>
+
+{% endblock %}

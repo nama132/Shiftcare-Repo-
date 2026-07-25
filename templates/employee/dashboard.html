@@ -1,0 +1,110 @@
+{% extends "employee/base.html" %}
+{% block title %}Home — Willow Grove{% endblock %}
+{% block page_title %}Home{% endblock %}
+{% block extra_head %}<meta http-equiv="refresh" content="60"/>{% endblock %}
+
+{% block content %}
+
+<!-- Greeting -->
+<div style="margin-bottom:20px;">
+  <div style="font-size:20px;font-weight:700;color:#10241A;">
+    Good
+    {% set h = now().hour %}
+    {{ 'morning' if h < 12 else ('afternoon' if h < 17 else 'evening') }},
+    {{ session.get('employee_name', '').split()[0] }}!
+  </div>
+  <div style="font-size:13px;color:#4B6357;margin-top:2px;">
+    {{ now().strftime('%A, %B %-d, %Y') }}
+  </div>
+</div>
+
+<!-- Today's shift -->
+{% if today_shift %}
+<div class="card" style="border-left:4px solid
+  {% if clock_state == 'in' %}#16A34A{% elif clock_state == 'out' %}#16A34A{% else %}#16A34A{% endif %};">
+  <div class="card-header">📅 Today's Shift</div>
+  <div class="card-body">
+    <div style="font-size:18px;font-weight:700;color:#10241A;margin-bottom:4px;">
+      {{ today_shift.start_time }} – {{ today_shift.end_time }}
+    </div>
+    <div style="font-size:14px;color:#10241A;font-weight:600;">{{ today_shift.client_name }}</div>
+    {% if today_shift.client_address %}
+    <div style="font-size:12px;color:#4B6357;margin-top:2px;">📍 {{ today_shift.client_address }}</div>
+    {% endif %}
+    {% if today_shift.care_notes %}
+    <div style="font-size:12px;color:#4B6357;margin-top:6px;padding:8px;background:#F2F8F4;border-radius:6px;">
+      📋 {{ today_shift.care_notes }}
+    </div>
+    {% endif %}
+
+    <div style="margin-top:16px;">
+      {% if clock_state == 'in' %}
+        <div style="font-size:12px;color:#16A34A;font-weight:600;margin-bottom:8px;">🟢 You are clocked in</div>
+        <form method="POST" action="{{ url_for('employee_clock_out', shift_id=today_shift.id) }}">
+          <button class="btn btn-red" type="submit">🔴 Clock Out</button>
+        </form>
+      {% elif today_shift.status == 'covered' %}
+        <div style="font-size:13px;color:#16A34A;font-weight:600;">✅ Shift completed</div>
+      {% else %}
+        <form method="POST" action="{{ url_for('employee_clock_in', shift_id=today_shift.id) }}">
+          <button class="btn btn-green" type="submit">🟢 Clock In</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body" style="text-align:center;color:#7B9488;padding:32px 16px;">
+    <div style="font-size:32px;margin-bottom:10px;">📭</div>
+    No shift scheduled for today.
+  </div>
+</div>
+{% endif %}
+
+<!-- This week stats -->
+<div style="font-size:13px;font-weight:600;color:#10241A;margin-bottom:10px;">This Week</div>
+<div class="stat-row">
+  <div class="stat-card">
+    <div class="stat-num">{{ week_stats.hours }}</div>
+    <div class="stat-lbl">Hours Worked</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">${{ "%.2f"|format(week_stats.earnings) }}</div>
+    <div class="stat-lbl">Earned</div>
+  </div>
+</div>
+<div class="stat-row">
+  <div class="stat-card">
+    <div class="stat-num">{{ week_stats.shift_count }}</div>
+    <div class="stat-lbl">Shifts This Week</div>
+  </div>
+  <div class="stat-card" style="border-left:3px solid #16A34A;">
+    <div class="stat-num" style="font-size:14px;color:#4B6357;">
+      {{ week_stats.week_start[5:] }} – {{ week_stats.week_end[5:] }}
+    </div>
+    <div class="stat-lbl">Pay Period</div>
+  </div>
+</div>
+
+<!-- Upcoming shifts -->
+{% if upcoming %}
+<div style="font-size:13px;font-weight:600;color:#10241A;margin-bottom:10px;margin-top:4px;">Upcoming Shifts</div>
+<div class="card">
+  <div class="card-body" style="padding:0 16px;">
+    {% for s in upcoming %}
+    {% if s.date != (now().date().isoformat()) %}
+    <div class="shift-row">
+      <div class="shift-dot shift-dot-blue"></div>
+      <div class="shift-info">
+        <div class="shift-time">{{ s.date[5:] }}  {{ s.start_time }} – {{ s.end_time }}</div>
+        <div class="shift-client">{{ s.client_name }}</div>
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

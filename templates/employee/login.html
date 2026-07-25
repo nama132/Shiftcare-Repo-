@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>Employee Login — Willow Grove</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #15803D 0%, #0D9488 100%);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px 16px;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 36px 28px;
+      width: 100%; max-width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .logo {
+      text-align: center; margin-bottom: 8px;
+      font-size: 40px; line-height: 1;
+    }
+    .brand-name {
+      text-align: center;
+      font-size: 20px; font-weight: 700; color: #10241A;
+      margin-bottom: 4px;
+    }
+    .brand-sub {
+      text-align: center;
+      font-size: 13px; color: #4B6357;
+      margin-bottom: 28px;
+    }
+    .error-banner {
+      background: #FEE2E2; border: 1px solid #FCA5A5;
+      border-radius: 8px; padding: 10px 14px;
+      margin-bottom: 16px; font-size: 13px; color: #991B1B;
+    }
+    .form-group { margin-bottom: 16px; }
+    label {
+      display: block; font-size: 13px; font-weight: 500;
+      color: #4B6357; margin-bottom: 6px;
+    }
+    input {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid #C7DDD0; border-radius: 10px;
+      font-size: 15px; color: #10241A;
+      font-family: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus {
+      outline: none; border-color: #16A34A;
+      box-shadow: 0 0 0 3px rgba(22,163,74,0.15);
+    }
+    .hint { font-size: 12px; color: #7B9488; margin-top: 4px; }
+    .btn-submit {
+      width: 100%; padding: 14px;
+      background: #16A34A; color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 16px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      transition: background 0.15s; margin-top: 6px;
+    }
+    .btn-submit:hover { background: #15803D; }
+    .divider { height: 1px; background: #DFEAE3; margin: 20px 0; }
+    .footer-text {
+      text-align: center; font-size: 12px; color: #7B9488; line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+<div class="login-card">
+
+  <div class="logo">🏥</div>
+  <div class="brand-name">Willow Grove</div>
+  <div class="brand-sub">Employee Portal</div>
+
+  {% if error %}
+  <div class="error-banner">❌ {{ error }}</div>
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('employee_login') }}" autocomplete="on">
+
+    <div class="form-group">
+      <label for="phone">Phone Number</label>
+      <input type="tel" id="phone" name="phone"
+             placeholder="(571) 466-2908"
+             autocomplete="tel" required autofocus/>
+      <div class="hint">The number your agency has on file</div>
+    </div>
+
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password"
+             placeholder="••••••••"
+             autocomplete="current-password" required/>
+    </div>
+
+    <button class="btn-submit" type="submit">Continue →</button>
+
+  </form>
+
+  <div class="divider"></div>
+  <div class="footer-text">
+    After entering your password, we'll send a<br/>
+    6-digit verification code to your phone.
+  </div>
+
+</div>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>ShiftCare Admin</title>
+  <title>Willow Grove Admin</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}"/>
   <style>
     body { display: flex; min-height: 100vh; }
@@ -104,7 +104,7 @@
 </head>
 <body>
 <aside class="sidebar">
-  <div class="brand">🏥 ShiftCare<span class="dot">.</span></div>
+  <div class="brand">🌿 Willow Grove<span class="dot">.</span></div>
   <nav>
     <a href="{{ url_for('admin_caregivers') }}"
        class="{{ 'active' if request.endpoint and 'caregiver' in request.endpoint }}">

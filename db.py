@@ -1,4 +1,4 @@
-"""SQLite (dev) + PostgreSQL (production) database helpers for ShiftCare.
+"""SQLite (dev) + PostgreSQL (production) database helpers for Willow Grove.
 
 When DATABASE_URL is set (Railway/Render), psycopg2 is used automatically.
 All existing query helpers use ? placeholders — the PgWrapper transparently
@@ -1348,7 +1348,7 @@ def seed_demo_messages() -> int:
          "You're confirmed for Mr. Hayes, 9:00 AM–1:00 PM. Thank you for covering, Priya!", f"{base}T06:04:52"),
         # Family gets notified
         (family, "Mr. Robert Hayes (family)", "family", "outbound",
-         "Good morning! Quick update on Mr. Hayes' care today: Priya Patel will be arriving at 9:00 AM to cover the morning shift. — ShiftCare", f"{base}T06:05:05"),
+         "Good morning! Quick update on Mr. Hayes' care today: Priya Patel will be arriving at 9:00 AM to cover the morning shift. — Willow Grove", f"{base}T06:05:05"),
         (family, "Mr. Robert Hayes (family)", "family", "inbound",
          "Thank you so much for letting us know. Really appreciate the quick update!", f"{base}T06:09:31"),
     ]

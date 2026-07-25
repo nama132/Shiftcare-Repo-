@@ -1,4 +1,4 @@
-"""ShiftCare Flask app — incoming SMS webhook + live dashboard + admin panel."""
+"""Willow Grove Flask app — incoming SMS webhook + live dashboard + admin panel."""
 from __future__ import annotations
 
 import logging
@@ -71,7 +71,7 @@ def _send_daily_digest():
     covered = sum(1 for s in shifts if s["status"] in ("covered", "scheduled", "active"))
     uncovered = sum(1 for s in shifts if s["status"] == "uncovered")
     msg = (
-        f"📋 ShiftCare daily digest for {today}: "
+        f"📋 Willow Grove daily digest for {today}: "
         f"{total} shifts — {covered} covered, {uncovered} uncovered."
     )
     from sms import send_sms
@@ -815,7 +815,7 @@ def _require_employee(f):
 def _send_otp(phone: str, code: str) -> None:
     """Send the 6-digit verification code via SMS."""
     from sms import send_sms
-    send_sms(phone, f"ShiftCare: Your login code is {code}. It expires in 10 minutes. Do not share this code.")
+    send_sms(phone, f"Willow Grove: Your login code is {code}. It expires in 10 minutes. Do not share this code.")
 
 
 @app.route("/employee/login", methods=["GET", "POST"])
@@ -1175,7 +1175,7 @@ def _send_contact_email(name: str, email: str, agency: str, message: str) -> Non
     from_addr = os.getenv("SMTP_FROM", user or to_addr)
 
     msg = EmailMessage()
-    msg["Subject"] = f"New ShiftCare inquiry from {name}"
+    msg["Subject"] = f"New Willow Grove inquiry from {name}"
     msg["From"] = from_addr
     msg["To"] = to_addr
     msg["Reply-To"] = email
